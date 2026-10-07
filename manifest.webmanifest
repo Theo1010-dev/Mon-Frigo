@@ -1,0 +1,32 @@
+{
+  "name": "Mon Frigo",
+  "short_name": "Mon Frigo",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ed008c",
+  "theme_color": "#ed008c",
+  "description": "Gestion du stock, recettes, courses et habitudes culinaires.",
+  "lang": "fr-FR",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "mon-frigo",
+  "scope": "./",
+  "orientation": "portrait-primary",
+  "categories": [
+    "food",
+    "lifestyle",
+    "productivity"
+  ]
+}

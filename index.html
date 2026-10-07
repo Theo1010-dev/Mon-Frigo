@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ed008c">
+<link rel="icon" href="assets/icon-192.png"><link rel="apple-touch-icon" href="assets/icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Mon Frigo — ton assistant cuisine</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><img src="assets/icon-192.png" alt="" style="width:30px;height:30px;border-radius:9px;object-fit:cover"><span>Mon Frigo</span></div>
+    <div class="row" style="gap:4px"><button class="icon-btn" id="globalSearchBtn" aria-label="Rechercher" title="Rechercher">⌕</button><button class="icon-btn" id="themeBtn" aria-label="Changer de thème" aria-pressed="false">◐</button></div>
+  </header>
+  <main id="view"></main>
+  <nav class="tabbar" id="tabbar">
+    <button data-tab="home" class="active"><span>⌂</span><small>Accueil</small></button>
+    <button data-tab="stock"><span>▦</span><small>Stock</small></button>
+    <button data-tab="recipes"><span>✦</span><small>Recettes</small></button>
+    <button data-tab="shopping"><span>✓</span><small>Courses</small></button>
+    <button data-tab="me"><span>○</span><small>Moi</small></button>
+  </nav>
+</div>
+<div id="modalRoot"></div>
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+</body></html>
