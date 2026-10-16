@@ -1,0 +1,11 @@
+{
+  "name": "mon-frigo",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/files.test.mjs && node tests/logic.test.mjs",
+    "test:all": "npm test && python3 tests/e2e.py && python3 tests/migration.py",
+    "data": "cd tools && python3 kb.py && python3 build.py --strict"
+  }
+}
