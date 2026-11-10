@@ -1,9 +1,9 @@
 // Service worker de Mon Frigo (version et liste de fichiers injectées par tools/build.mjs).
 // Règle d'or : la page vient d'internet en priorité, le cache ne sert que hors ligne ou si le réseau est très lent.
 // Il ne touche qu'à ses propres caches : le domaine github.io est partagé avec tes autres applis.
-const VERSION = '1.3.1';
+const VERSION = '1.4.0';
 const CACHE = 'mon-frigo-' + VERSION;
-const CORE = ["./","app.js?v=1.3.1","apple-touch-icon.png","bricolage.woff2","favicon.png","icon-192.png","icon-512.png","index.html","ingredients.json?v=1.3.1","instrument-sans.woff2","manifest.webmanifest","maskable-192.png","maskable-512.png","recipes.json?v=1.3.1","styles.css?v=1.3.1"];
+const CORE = ["./","app.js?v=1.4.0","apple-touch-icon.png","bricolage.woff2","favicon.png","icon-192.png","icon-512.png","index.html","ingredients.json?v=1.4.0","instrument-sans.woff2","manifest.webmanifest","maskable-192.png","maskable-512.png","recipes.json?v=1.4.0","styles.css?v=1.4.0"];
 const isOld = k => k !== CACHE && (k.startsWith('mon-frigo-') || /^frigo-v\d+$/.test(k));
 
 self.addEventListener('install', e => {
