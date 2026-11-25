@@ -1,0 +1,16 @@
+{
+  "name": "mon-frigo",
+  "version": "1.13.4",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/files.test.mjs && node tests/logic.test.mjs",
+    "test:all": "npm run build && npm test && npm run lint && python3 tests/e2e.py && python3 tests/migration.py && python3 tests/textfit.py",
+    "data": "python3 tools/data/ingredients.py && python3 tools/data/recipes.py --strict",
+    "build": "node tools/build.mjs",
+    "lint": "npx eslint@8.57.0 --no-eslintrc -c tools/eslint.json js/*.js sw.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.0"
+  }
+}
