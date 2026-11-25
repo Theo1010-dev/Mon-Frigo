@@ -9,6 +9,12 @@ Utilisateur : Théo, français, pas développeur. Répondre en français, court 
 - Garder l'ambiance « Chaumière » (il a refusé le thème Seigneur des anneaux). Ne pas surcharger l'interface (pas de gros encadrés).
 - Tout homogénéiser, ne rien casser. Finir chaque tour par un gros audit, puis un message court avec les points à tester.
 
+## Confidentialité (impératif)
+- Aucune donnée personnelle de Théo dans le code (chiffres, portefeuille, salaire, nom, adresse mail) : un nouveau visiteur doit arriver sur une appli vide.
+- Les données de chacun restent uniquement sur son téléphone (stockage du navigateur). Ne jamais changer l'adresse de l'appli, la clé de stockage ni le nom de la base : ça effacerait les données.
+- Une mise à jour garde toujours les données existantes (tester : ancienne version avec données → nouvelle version → données identiques).
+- L'historique Git a été nettoyé le 26/11/2026 (un seul commit) : repartir d'un clone neuf, ne jamais refusionner une ancienne copie.
+
 ## Branches
 - `source` : le code. `main` : le site GitHub Pages, 23 fichiers à plat = `dist/` (+ un CLAUDE.md qui renvoie ici). Ne jamais éditer `main` à la main.
 - Mise en ligne : `tools/publish.sh` (build, tests, lint, test de mise à jour depuis main, copie de dist/ sur main, commit, push). Pages se met à jour en ~1 min ; vérifier https://theo1010-dev.github.io/Mon-Frigo/version.json.
