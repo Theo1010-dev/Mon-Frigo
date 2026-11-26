@@ -917,3 +917,8 @@ details.more[open] { padding-bottom: 14px; }
 .msg-av .mascot { width: 26px; height: 26px; }
 .me-tile-e .mascot { width: 30px; height: 30px; }
 :root[data-still] .mascot .m-eyes { animation: none; }
+
+/* recette perso : choix de l'icône */
+.emo-pick { display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: none; text-align: left; color: var(--ink); font: inherit; font-weight: 650; cursor: pointer; } .emo-pick .muted { font-weight: 500; }
+.emo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; margin-top: 10px; } .emo-grid[hidden] { display: none; }
+.emo-grid .emo { height: 44px; border: 0; border-radius: 12px; background: var(--sunk); font-size: 24px; line-height: 1; cursor: pointer; } .emo-grid .emo.on { background: var(--accent-tint); box-shadow: inset 0 0 0 2px var(--accent); }

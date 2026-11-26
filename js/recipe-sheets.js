@@ -1,6 +1,6 @@
 // Fenêtres des recettes : fiche recette, mode cuisine (minuteurs), fin de cuisson, historique, recette perso, filtres.
 import * as A from './actions.js';
-import { h, btn, openSheet, confirmSheet, toast, stepper, seg, chip, field, plate, meta, tint, clear, haptic } from './ui.js';
+import { h, btn, openSheet, confirmSheet, toast, stepper, seg, chip, field, plate, meta, tint, clear, haptic, recipeEmoji } from './ui.js';
 import { icon } from './icons.js';
 import { S, mutate, set, ensureIng, rebuildCatalogue } from './state.js';
 import { coverage, scaleIngredients, CUISINES, missingEquip, EQUIP, EQUIP_EMOJI, equipName, equipPlan, lockText } from './recipes.js';
@@ -59,7 +59,7 @@ export function openRecipe(rid, opts = {}) {
     if (cov.missing.length) ingBox.append(btn(`Ajouter ${cov.missing.length > 1 ? `les ${cov.missing.length} produits manquants` : 'le produit manquant'} aux courses`, { class: 'btn soft block', onclick: () => { const n = A.addMissingToShop(cov.missing); toast(n ? `${n} produit${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''} aux courses` : 'Déjà dans tes courses'); } }, 'cart'));
   }
   const top = h('div', { class: 'r-top', style: tint(r) }, plate(r, kb, 'xxl'), h('h1', null, r.t),
-    meta([['clock', `${r.m} min`], ['utensils', r.d], r.costKnown && r.costPer > 0 ? ['coin', `≈ ${money(r.costPer)} par pers.`] : null, r.custom ? null : ['flame', appliances(r)]]),
+    meta([['clock', `${r.m} min`], ['utensils', r.d], r.costKnown && r.costPer > 0 ? ['coin', `≈ ${money(r.costPer)} par pers.`] : null, r.custom && !(r.e || []).length ? null : ['flame', appliances(r)]]),
     h('div', { class: 'badges' }, h('span', { class: 'badge' }, SOURCE_LABEL[r.o] || 'Recette'), h('span', { class: 'badge' }, r.c), r.veg ? h('span', { class: 'badge ok' }, 'Végétarien') : null, h('span', { class: 'badge', title: 'Indice d’équilibre indicatif, pas un avis nutritionnel' }, r.bal.label)));
   const servRow = h('div', { class: 'serv-row' }, h('h2', null, 'Pour'), stepper(serv, { min: 1, max: 12, fmt: v => `${v} personne${v > 1 ? 's' : ''}`, onChange: v => { serv = v; drawIng(); } }));
   const share = h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Partager la recette', onclick: async () => {
@@ -175,8 +175,17 @@ export function openHistoryEntry(id) {
 }
 
 // ---------- recette personnelle ----------
+// ce qu'on peut choisir pour sa recette, comme pour celles du catalogue : icône, moment, type de plat, cuisine, appareils, difficulté
+const RECIPE_EMOJIS = ['🍝', '🍕', '🍔', '🌮', '🌯', '🥪', '🥗', '🍲', '🥘', '🍛', '🍜', '🍣', '🍱', '🥟', '🍚', '🍙', '🥣', '🍳', '🥚', '🥞', '🧇', '🥐', '🥖', '🧀', '🥩', '🍗', '🍖', '🥓', '🐟', '🦐', '🍤',
+  '🥦', '🥕', '🍆', '🍄', '🥔', '🌽', '🍅', '🧅', '🥑', '🍰', '🎂', '🧁', '🍪', '🍩', '🍫', '🍮', '🍨', '🥧', '🍎', '🍌', '🍓', '🍒', '🍋', '🍑', '🥥', '🥜', '☕', '🍹', '🍷'];
+const MOMENTS_EDIT = [['🥐 Petit-déj', ['Petit-déjeuner']], ['🥗 Entrée', ['Entrée']], ['🍽️ Plat', ['Déjeuner', 'Dîner']], ['🍰 Dessert', ['Dessert']], ['🍪 Goûter', ['Goûter']], ['🥂 Apéro', ['Apéritif']]];
+const LEVELS = ['Facile', 'Intermédiaire', 'Difficile'];
 export function openCustomRecipe({ id, from, serv, title, onSaved } = {}) {
   const src = id ? S.cat.get(id) : from ? S.cat.get(from) : null;
+  // les réglages de la recette (repris de celle qu'on adapte ou qu'on modifie)
+  const M = { emo: src ? src.emo || (from ? recipeEmoji(src, kb) : null) : null, c: src ? src.c : 'Mes recettes', k: src ? src.k || '' : '', e: new Set(src ? src.e || [] : []), d: src && LEVELS.includes(src.d) ? src.d : src && src.d === 'Moyen' ? 'Intermédiaire' : 'Facile',
+    mt: new Set(MOMENTS_EDIT.map(([, v], i) => (src ? (src.mt || []).some(x => v.includes(x)) : i === 2) ? i : -1).filter(i => i >= 0)) };
+  if (!M.mt.size) M.mt.add(2);
   const nameIn = h('input', { class: 'input', placeholder: 'Nom de la recette', value: src ? (from ? src.t + ' (ma version)' : src.t) : title || '' });
   const time = h('input', { class: 'input', inputmode: 'numeric', value: src ? src.m : 30, 'aria-label': 'Durée en minutes' });
   const servIn = h('input', { class: 'input', inputmode: 'numeric', value: from ? (serv || src.s) : (src ? src.s : serv || 2), 'aria-label': 'Nombre de personnes' });
@@ -188,16 +197,44 @@ export function openCustomRecipe({ id, from, serv, title, onSaved } = {}) {
   };
   if (src) { const f = from ? (serv || src.s) / src.s : 1; for (const [iid, q, u] of src.i) addRow(ingName(iid), Math.round(q * f * 100) / 100, u); } else { addRow(); addRow(); }
   const stepsIn = h('textarea', { class: 'input', rows: 6, placeholder: 'Une étape par ligne' }); stepsIn.value = src ? src.p.join('\n') : '';
+  // icône : un aperçu de l'assiette, et la grille pour la changer (« ✨ » = choisie d'après le nom et les ingrédients)
+  const preview = () => ({ t: nameIn.value, c: M.c, emo: M.emo, i: rowsData.map(o => [kb.resolve(o.n.value.trim()) || '', 1, 'g']).filter(x => x[0]) });
+  // les éléments restent en place (on change juste leur contenu) : un toucher juste après avoir tapé un ingrédient n'est pas perdu
+  const plateEl = plate(preview(), kb, 'md'), labT = h('span'), labS = h('span', { class: 'muted sm block' });
+  const iconBtn = h('button', { type: 'button', class: 'emo-pick', 'aria-expanded': 'false', onclick: () => { grid.hidden = !grid.hidden; iconBtn.setAttribute('aria-expanded', String(!grid.hidden)); } }, plateEl, h('span', { class: 'emo-lab' }, labT, labS));
+  const drawIcon = () => { const pv = preview(); plateEl.textContent = recipeEmoji(pv, kb); for (const [k, v] of Object.entries(tint(pv))) plateEl.style.setProperty(k, v); labT.textContent = M.emo ? 'Changer l’icône' : 'Icône automatique'; labS.textContent = M.emo ? 'Touche ✨ pour revenir à l’automatique' : 'Touche pour en choisir une'; };
+  const grid = h('div', { class: 'emo-grid', hidden: '' });
+  const drawGrid = () => { clear(grid); grid.append(...[null, ...RECIPE_EMOJIS].map(e => h('button', { type: 'button', class: 'emo' + (M.emo === e ? ' on' : ''), 'aria-label': e ? `Icône ${e}` : 'Icône automatique', 'aria-pressed': String(M.emo === e),
+    onclick: () => { M.emo = e; haptic(6); drawGrid(); drawIcon(); grid.hidden = true; iconBtn.setAttribute('aria-expanded', 'false'); } }, e || '✨'))); };
+  nameIn.addEventListener('input', () => { if (!M.emo) drawIcon(); }); ingBox.addEventListener('change', () => { if (!M.emo) drawIcon(); });
+  drawGrid(); drawIcon();
+  // moment, type de plat, cuisine, appareils, difficulté
+  const cats = ['Mes recettes', ...new Set(S.cat.list.filter(r => !r.custom).map(r => r.c))].filter((x, i, a) => a.indexOf(x) === i).sort((a, b) => a === 'Mes recettes' ? -1 : b === 'Mes recettes' ? 1 : a.localeCompare(b, 'fr'));
+  const kitchens = [...new Set(S.cat.list.filter(r => !r.custom && r.k).map(r => r.k))].sort((a, b) => a.localeCompare(b, 'fr'));
+  const catSel = h('select', { class: 'input', 'aria-label': 'Type de plat', onchange: e => { M.c = e.target.value; drawIcon(); } }, cats.map(c => h('option', { value: c, selected: c === M.c }, c === 'Mes recettes' ? 'Autre' : c)));
+  const kSel = h('select', { class: 'input', 'aria-label': 'Cuisine', onchange: e => { M.k = e.target.value; } }, h('option', { value: '', selected: !M.k }, '—'), kitchens.map(k => h('option', { value: k, selected: k === M.k }, k)));
+  const momentBox = h('div', { class: 'chips wrap' }), equipBox = h('div', { class: 'chips wrap' }), levelBox = h('div', { class: 'chips wrap' });
+  const drawChips = () => {
+    clear(momentBox); momentBox.append(...MOMENTS_EDIT.map(([l], i) => chip(l, M.mt.has(i), () => { M.mt.has(i) && M.mt.size > 1 ? M.mt.delete(i) : M.mt.add(i); drawChips(); })));
+    clear(equipBox); equipBox.append(chip('🧊 Sans cuisson', !M.e.size, () => { M.e.clear(); drawChips(); }), ...EQUIP.map(([k, l]) => chip(`${EQUIP_EMOJI[k]} ${l}`, M.e.has(k), () => { M.e.has(k) ? M.e.delete(k) : M.e.add(k); drawChips(); })));
+    clear(levelBox); levelBox.append(...LEVELS.map(l => chip(l, M.d === l, () => { M.d = l; drawChips(); })));
+  };
+  drawChips();
   const s = openSheet({ title: id ? 'Modifier ma recette' : from ? 'Adapter la recette' : 'Nouvelle recette', size: 'tall',
-    content: h('div', { class: 'form' }, field('Nom', nameIn), h('div', { class: 'row gap' }, h('div', { class: 'grow' }, field('Durée (min)', time)), h('div', { class: 'grow' }, field('Personnes', servIn))),
+    content: h('div', { class: 'form' }, field('Nom', nameIn), h('div', { class: 'field' }, h('span', { class: 'lab' }, 'Icône'), iconBtn, grid),
+      h('div', { class: 'row gap' }, h('div', { class: 'grow' }, field('Durée (min)', time)), h('div', { class: 'grow' }, field('Personnes', servIn))),
+      h('div', { class: 'field' }, h('span', { class: 'lab' }, 'C’est pour'), momentBox),
+      h('div', { class: 'row gap' }, h('div', { class: 'grow' }, field('Type de plat', catSel)), h('div', { class: 'grow' }, field('Cuisine', kSel))),
       h('div', { class: 'field' }, h('span', { class: 'lab' }, 'Ingrédients'), ingBox, btn('Ajouter un ingrédient', { class: 'btn link', onclick: () => addRow() }, 'plus')), field('Étapes', stepsIn),
+      h('div', { class: 'field' }, h('span', { class: 'lab' }, 'Appareils'), equipBox), h('div', { class: 'field' }, h('span', { class: 'lab' }, 'Difficulté'), levelBox),
       id ? btn('Supprimer cette recette', { class: 'btn link danger-text', onclick: async () => { if (await confirmSheet({ title: 'Supprimer ?', text: 'Cette recette sera définitivement supprimée.', ok: 'Supprimer', danger: true })) { mutate('custom', l => l.filter(x => x.id !== id)); mutate('fav', f => f.filter(x => x !== id)); rebuildCatalogue(); toast('Recette supprimée'); s.close(); } } }) : null),
     footer: btn('Enregistrer', { class: 'btn primary block', onclick: () => {
       const t = nameIn.value.trim(), steps = stepsIn.value.split('\n').map(x => x.trim()).filter(Boolean);
       const ings = rowsData.map(o => ({ n: o.n.value.trim(), q: num(o.qi.value), u: o.un.value })).filter(x => x.n);
       if (!t) { toast('Donne un nom à ta recette'); nameIn.focus(); return; } if (!ings.length) { toast('Ajoute au moins un ingrédient'); return; } if (!steps.length) { toast('Ajoute au moins une étape'); stepsIn.focus(); return; }
       if (ings.some(x => !(x.q > 0))) { toast('Chaque ingrédient doit avoir une quantité'); return; }
-      const rec = { id: id || 'perso-' + uid(), t, c: 'Mes recettes', d: 'Facile', m: Math.max(1, parseInt(time.value) || 30), s: Math.max(1, parseInt(servIn.value) || 2), e: [], g: [], k: '', mt: ['Déjeuner', 'Dîner'], i: ings.map(x => [ensureIng(x.n), x.q, x.u]), p: steps, o: 'perso', custom: true };
+      const rec = { id: id || 'perso-' + uid(), t, c: M.c, d: M.d, m: Math.max(1, parseInt(time.value) || 30), s: Math.max(1, parseInt(servIn.value) || 2), e: EQUIP.map(([k]) => k).filter(k => M.e.has(k)), g: [], k: M.k,
+        mt: [...new Set([...M.mt].sort().flatMap(i => MOMENTS_EDIT[i][1]))], i: ings.map(x => [ensureIng(x.n), x.q, x.u]), p: steps, o: 'perso', custom: true, ...(M.emo ? { emo: M.emo } : {}) };
       mutate('custom', l => id ? l.map(x => x.id === id ? rec : x) : [...l, rec]); rebuildCatalogue(); toast(id ? 'Recette modifiée' : 'Recette créée'); s.close(); if (onSaved) onSaved(rec); else if (!id) setTimeout(() => openRecipe(rec.id), 260); } }) });
   setTimeout(() => !src && nameIn.focus(), 300);
 }

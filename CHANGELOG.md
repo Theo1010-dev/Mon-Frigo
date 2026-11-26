@@ -16,6 +16,10 @@
 - **« J'ai pas de riz »** : des remplaçants adaptés (semoule, boulgour, quinoa…), en priorité ce que tu as déjà. Pendant une recette, ils sont adaptés à celle-ci : jamais de banane à la place des œufs dans une carbonara. Il propose aussi des idées sans ce produit.
 - L'assistant dit honnêtement qu'il ne peut pas voir les photos (il fonctionne sans internet), et donne à la place les repères de l'étape en cours.
 - Pour « on mange quoi ce soir », il propose de vrais plats plutôt que des entrées.
+- **Recettes perso personnalisables comme les autres** : tu choisis l'icône (ou ✨ automatique), le moment (petit-déj, entrée, plat, dessert, goûter, apéro), le type de plat, la cuisine, les appareils et la difficulté. « Modifier » reprend tout.
+- **43 nouvelles recettes** (1 288 en tout, dont 803 écrites à la main), surtout pour les appareils qui en avaient peu : raclette (savoyarde au reblochon, façon tartiflette, poulet et légumes grillés), gaufrier, micro-ondes, Thermomix, barbecue, air fryer (nuggets, potatoes, cordons bleus) et Cookeo. Et des idées du quotidien : galettes de sarrasin, buddha bowl, pizza blanche chèvre-miel, cake au citron…
+- Nouvelles icônes pour les nouilles 🍜, le riz sauté et le riz au lait 🍚, les galettes 🥞.
+- Correction : un rare message d'erreur pouvait apparaître en fermant une fenêtre pendant qu'on tapait.
 
 ## 1.16.0
 - **Un appareil se remplace souvent** : un burger au barbecue se fait aussi à la poêle, des frites au air fryer au four, un plat au Cookeo en cocotte, une recette au Thermomix à la casserole, une raclette sous le grill du four… Ces recettes ne sont plus grisées si un de tes appareils fait l'affaire. La carte l'indique (« à la poêle », « en cocotte »), et la fiche comme le mode cuisine expliquent comment faire (température, temps).

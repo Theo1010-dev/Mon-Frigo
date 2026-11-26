@@ -3,7 +3,7 @@
 Les recettes sont écrites dans gen_*.py (gen_hand*.py = recettes écrites à la main, une famille par fichier)."""
 import json, re, unicodedata, sys, collections, os
 from gen_core import K, nm
-import gen_fam, gen_fam2, gen_hand1, gen_hand2, gen_hand3, gen_hand4, gen_hand5, gen_hand6, gen_hand7, gen_hand8, gen_hand9, gen_hand10, gen_hand11, gen_hand12, gen_hand13, gen_hand14, gen_hand15, gen_hand16, gen_hand17, gen_hand18, gen_hand19, gen_hand20
+import gen_fam, gen_fam2, gen_hand1, gen_hand2, gen_hand3, gen_hand4, gen_hand5, gen_hand6, gen_hand7, gen_hand8, gen_hand9, gen_hand10, gen_hand11, gen_hand12, gen_hand13, gen_hand14, gen_hand15, gen_hand16, gen_hand17, gen_hand18, gen_hand19, gen_hand20, gen_hand21
 
 def slug(s):
     s = unicodedata.normalize("NFD", s.lower()); s = "".join(c for c in s if unicodedata.category(c) != "Mn")
@@ -50,7 +50,7 @@ CAT_MAP = {"Plats au four": "Gratins & four", "Gratins": "Gratins & four", "Tart
 def all_recipes():
     R = []
     R += gen_hand1.recipes() + gen_hand2.recipes() + gen_hand3.recipes() + gen_hand4.recipes() + gen_hand5.recipes() + gen_hand6.recipes() + gen_hand7.recipes() + gen_hand8.recipes() + gen_hand9.recipes()
-    R += gen_hand10.recipes() + gen_hand11.recipes() + gen_hand12.recipes() + gen_hand13.recipes() + gen_hand14.recipes() + gen_hand15.recipes() + gen_hand16.recipes() + gen_hand17.recipes() + gen_hand18.recipes() + gen_hand19.recipes() + gen_hand20.recipes()
+    R += gen_hand10.recipes() + gen_hand11.recipes() + gen_hand12.recipes() + gen_hand13.recipes() + gen_hand14.recipes() + gen_hand15.recipes() + gen_hand16.recipes() + gen_hand17.recipes() + gen_hand18.recipes() + gen_hand19.recipes() + gen_hand20.recipes() + gen_hand21.recipes()
     R += gen_fam.poelees(limit=100) + gen_fam.currys() + gen_fam.soupes(limit=52) + gen_fam.salades() + gen_fam.gratins()
     R += gen_fam2.omelettes() + gen_fam2.quiches() + gen_fam2.pizzas() + gen_fam2.gnocchis() + gen_fam2.risottos() + gen_fam2.woks() + gen_fam2.bowls() + gen_fam2.tartines() + gen_fam2.wraps()
     return R

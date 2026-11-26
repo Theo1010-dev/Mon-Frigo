@@ -165,13 +165,21 @@ with sync_playwright() as p:
         pg.click('.fab'); pg.wait_for_timeout(300); assert pg.locator('.sheet.open').count() == 1, 'réouverture après fermeture'
         pg.go_back(); pg.wait_for_timeout(400); assert pg.locator('.sheet.open').count() == 0 and pg.evaluate('location.hash') == '#/stock'
 
-    @step('Recette personnelle : validation puis création, recherche, filtre « Mes recettes »')
+    @step('Recette personnelle : validation, icône choisie, moment, type de plat, cuisine, appareil, difficulté ; recherche, filtre « Mes recettes »')
     def _():
         tab('recipes'); pg.fill('input[aria-label="Rechercher une recette"]', ''); pg.wait_for_timeout(300); pg.get_by_role('button', name='Créer ma recette').click(); pg.wait_for_timeout(300); s = sheet()
         s.get_by_role('button', name='Enregistrer').click(); pg.wait_for_timeout(200); assert not D()['custom'], ('recette vide acceptée', D()['custom'])
         s.locator('input').first.fill('Gratin de mamie'); ing = s.locator('.ing-row').first; ing.locator('input').nth(0).fill('pommes de terre'); ing.locator('input').nth(1).fill('800')
+        s.locator('.emo-pick').click(); pg.wait_for_timeout(200); s.get_by_role('button', name='Icône 🥧').click(); pg.wait_for_timeout(200)
+        assert s.locator('.emo-grid').is_hidden() and s.locator('.emo-pick .plate').inner_text() == '🥧', 'icône choisie'
+        s.locator('select[aria-label="Type de plat"]').select_option('Gratins & four'); s.locator('select[aria-label="Cuisine"]').select_option('Savoyarde')
+        s.locator('.chip', has_text='♨️ Four').click(); s.locator('.chip', has_text='Intermédiaire').click()
         s.locator('textarea').fill('Couper les pommes de terre\nCuire 45 min au four'); s.get_by_role('button', name='Enregistrer').click(); pg.wait_for_timeout(600)
         c = D()['custom']; assert len(c) == 1 and c[0]['i'][0][0] == 'pomme-de-terre', ('custom', c)
+        assert [c[0].get('emo'), c[0]['c'], c[0]['k'], c[0]['e'], c[0]['d'], c[0]['mt']] == ['🥧', 'Gratins & four', 'Savoyarde', ['four'], 'Intermédiaire', ['Déjeuner', 'Dîner']], c[0]
+        assert sheet().locator('.plate').first.inner_text() == '🥧', 'icône sur la fiche'
+        sheet().get_by_role('button', name='Modifier').click(); pg.wait_for_timeout(500)
+        assert sheet().locator('select[aria-label="Cuisine"]').input_value() == 'Savoyarde' and sheet().locator('.chip.on', has_text='♨️ Four').count() == 1, 'réglages repris'
         def mine():
             pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400); sheet().locator('.chip', has_text='Mes recettes').click(); sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(400)
         close_sheets(); mine(); assert pg.get_by_text('Gratin de mamie').count() == 1 and pg.locator('.rec').count() == 1, ('visible', pg.get_by_text('Gratin de mamie').count(), pg.locator('.rec').count())

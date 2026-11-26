@@ -273,4 +273,4 @@ const FAM = {
 };
 const FAM_OF = new Map(Object.entries(FAM).flatMap(([f, l]) => l.map(k => [k, f])));
 export const CUISINES = [['france', '🥖 France'], ['italie', '🍕 Italie'], ['medit', '🫒 Méditerranée et Orient'], ['asie', '🥢 Asie'], ['inde', '🍛 Inde'], ['ameriques', '🌮 Amériques'], ['ailleurs', '🌍 Ailleurs']];
-export const cuisineFamily = r => (r.custom || !r.k ? 'france' : FAM_OF.get(r.k) || 'ailleurs');
+export const cuisineFamily = r => (!r.k ? 'france' : FAM_OF.get(r.k) || 'ailleurs');
