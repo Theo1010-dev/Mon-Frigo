@@ -1,5 +1,15 @@
 # Historique des versions de Mon Frigo
 
+## 1.15.0
+- **3 nouveaux appareils** dans « Mon équipement » : barbecue (ou plancha), appareil à raclette et gaufrier. Comme les autres, leurs recettes sont grisées tant que tu ne les as pas cochés. Les gaufres demandent désormais un gaufrier.
+- **Filtre « Appareil »** dans Recettes → Filtres : voir les recettes d'un appareil précis (Cookeo, air fryer, barbecue…), ou « Sans cuisson », et « Seulement avec mon équipement » pour cacher les grisées. L'appareil choisi s'affiche en puce qu'on retire d'un geste.
+- **45 recettes en plus** (1 245 en tout, 760 écrites à la main) : 12 au barbecue (brochettes, merguez, sardines, burgers, gambas, saumon à la plancha, ananas grillé…), 3 raclettes, 5 au gaufrier (chocolat, pommes de terre, croque-gaufre…), 6 au micro-ondes, 6 au air fryer, 6 au Thermomix, 5 au Cookeo, croziflette et petit salé aux lentilles.
+- Fiche recette : les appareils nécessaires sont indiqués sous le temps et le prix (« Plaques, four », « Cookeo », « Sans cuisson »).
+- Assistant : « une idée au barbecue », « une raclette ce soir », « des gaufres », « au four » ; repères de cuisson au barbecue, quantités pour une raclette, astuces gaufres. Avec un appareil demandé, un bouton « Voir les N recettes » ouvre la liste filtrée. Si tu as un appareil comme le Cookeo, l'assistant te propose une idée pour lui.
+- **Plus rapide** : l'onglet Recettes et l'accueil gardent leurs calculs en mémoire tant que rien ne change (affichage de la liste environ 2 fois plus rapide sur un téléphone moyen), et le démarrage ne prépare plus la recherche à l'avance.
+- Plats mieux illustrés : raclette 🧀, gaufres 🧇, burgers 🍔, pizzas 🍕, crêpes 🥞, brochettes 🍢…
+- La recherche trouve aussi les recettes par appareil (« cookeo », « barbecue »…).
+
 ## 1.14.0
 - **Cookeo** : 7ᵉ appareil dans « Mon équipement » (et dans « Appareils » de Ma cuisine), avec ses recettes grisées si tu ne l'as pas. 10 recettes au Cookeo (bœuf bourguignon, poulet curry-coco, chili con carne, risotto, dahl de lentilles, blanquette, poulet basquaise, pâtes crémeuses, soupe de légumes, riz au lait) avec les vrais programmes « Dorer » et « Cuisson sous pression ».
 - 5 classiques en plus : soupe à l'oignon gratinée, shakshuka, œufs cocotte, endives braisées au miel, poires Belle-Hélène. 1 200 recettes en tout.

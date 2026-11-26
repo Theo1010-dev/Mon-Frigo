@@ -9,7 +9,7 @@ import { clearFridge, myDishes, slotName } from './plan.js';
 import { expiringSoon, status, statusText, zoneLabel } from './stock.js';
 import { fmtQty } from './units.js';
 import { todayISO, addDays, fmtDateLong, norm, plural } from './util.js';
-import { nav, resetRUI } from './nav.js';
+import { nav, resetRUI, RUI } from './nav.js';
 import { learnedSummary, forgetAll } from './habits.js';
 import { stats as rpgStats, XP } from './rpg.js';
 import { seasonalItems } from './season.js';
@@ -80,7 +80,9 @@ function ideas(text, offset = 0) {
     need.length ? 'avec ' + need.map(id => art(id, null, true)).join(' et ') : null, excl.length ? 'sans ' + excl.map(id => kb.name(id).toLowerCase()).join(' ni ') : null, w.have ? 'avec ce que tu as' : null].filter(Boolean);
   if (!page.length) return [P(offset ? 'Je n’ai pas d’autres idées avec ces critères.' : `Je n’ai rien trouvé${bits.length ? ' ' + bits.join(', ') : ''}. Essaie avec moins de critères.`), actions(act('Voir toutes les recettes', later(() => nav.go('recipes')), 'utensils'))];
   return [P(offset ? 'D’autres idées :' : `Voici ${plural(page.length, 'une idée', 'quelques idées')}${bits.length ? ' ' + bits.join(', ') : ''} :`), h('div', { class: 'bot-recs' }, page.map(x => recCard(x.r, covWhy(x.r, x.sc)))),
-    actions(sc.length > offset + 4 ? act('D’autres idées', () => { push('me', [P('D’autres idées')]); reply(ideas(text, offset + 4)); }, 'dice') : null, act('Planifier un repas', later(() => nav.go('plan')), 'calendar'))];
+    actions(sc.length > offset + 4 ? act('D’autres idées', () => { push('me', [P('D’autres idées')]); reply(ideas(text, offset + 4)); }, 'dice') : null,
+      // un appareil demandé : toutes ses recettes dans l'onglet Recettes (filtre « Appareil »)
+      w.equip && sc.length > 4 ? act(`Voir les ${sc.length} recettes`, later(() => { resetRUI(); RUI.equip.add(w.equip); nav.go('recipes'); }), 'utensils') : act('Planifier un repas', later(() => nav.go('plan')), 'calendar'))];
 }
 
 function byName(q) {
@@ -120,7 +122,9 @@ const R = {
     if (soon.length) lines.push(['⏰ À finir vite : ', B(soon.slice(0, 3).map(x => x.name.toLowerCase()).join(', ')), soon.length > 3 ? ` et ${soon.length - 3} autres` : '']);
     lines.push([hgt < 15 ? '🍽️ Ce midi : ' : '🍽️ Ce soir : ', e ? B(r ? r.t : e.note) : 'rien de prévu pour l’instant']);
     if (left) lines.push([`🛒 ${left} ${plural(left, 'article', 'articles')} sur ta liste de courses`]);
-    const chips = [soon.length ? `Que faire avec ${art(soon[0].ing, soon[0].name)} ?` : null, !e ? (hgt < 15 ? 'On mange quoi ce midi ?' : 'On mange quoi ce soir ?') : null, 'Un dessert rapide', 'Combien de temps cuire le riz ?', 'Qu’as-tu appris sur moi ?', 'Comment ça marche ?'].filter(Boolean).slice(0, 6);
+    // un appareil « à part » que tu as coché (Cookeo, air fryer, barbecue…) : une idée rien que pour lui
+    const special = (d.prefs.equip || []).find(k => APPL_IDEA[k]);
+    const chips = [soon.length ? `Que faire avec ${art(soon[0].ing, soon[0].name)} ?` : null, !e ? (hgt < 15 ? 'On mange quoi ce midi ?' : 'On mange quoi ce soir ?') : null, special ? APPL_IDEA[special] : null, 'Un dessert rapide', 'Combien de temps cuire le riz ?', 'Qu’as-tu appris sur moi ?', 'Comment ça marche ?'].filter(Boolean).slice(0, 6);
     return [P(`${hgt < 18 ? 'Salut' : 'Bonsoir'}${name ? ' ' + name : ''} 👋 Moi c’est ${BOT}, ton assistant. Je connais ton stock, tes recettes, ta semaine, tes courses et plein d’astuces de cuisine : écris-moi comme à quelqu’un.`), list(lines), starters(chips)];
   },
   thanks: () => [P('Avec plaisir 😊')],
@@ -384,6 +388,7 @@ function learnedView() {
 }
 
 // ---------- fenêtre de discussion ----------
+const APPL_IDEA = { cookeo: 'Une idée au Cookeo', air_fryer: 'Une idée au air fryer', thermomix: 'Une idée au Thermomix', barbecue: 'Une idée au barbecue', raclette: 'Une idée de raclette', gaufrier: 'Une idée au gaufrier' };
 function starters(list = STARTERS) { return h('div', { class: 'chips wrap bot-starters' }, list.map(s => chip(s, false, () => ask(s)))); }
 function bubble(who, kids) {
   const m = h('div', { class: 'msg ' + who }, who === 'bot' ? h('span', { class: 'msg-av', 'aria-hidden': 'true' }, mascotEl({ size: 26 })) : null, h('div', { class: 'msg-b' }, ...[].concat(kids).filter(Boolean)));

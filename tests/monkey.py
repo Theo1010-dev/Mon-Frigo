@@ -33,7 +33,8 @@ with sync_playwright() as p:
             el = random.choice(cands); tag = el.evaluate('e => e.tagName'); label = (el.get_attribute('aria-label') or el.inner_text() or '')[:40].replace('\n', ' ')
             if any(k in label for k in SKIP): continue
             typ = el.get_attribute('type') if tag == 'INPUT' else None
-            if tag == 'INPUT' and typ not in ('checkbox', 'file', 'date'): el.fill(random.choice(WORDS)); el.press(random.choice(['Enter', 'Tab'])) if random.random() < .5 else None; act = f'tape {label}'
+            if tag == 'INPUT' and typ == 'time': el.fill(random.choice(['07:30', '19:45', '00:00'])); el.dispatch_event('change'); act = f'heure {label}'
+            elif tag == 'INPUT' and typ not in ('checkbox', 'file', 'date', 'range', 'color'): el.fill(random.choice(WORDS)); el.press(random.choice(['Enter', 'Tab'])) if random.random() < .5 else None; act = f'tape {label}'
             elif tag == 'INPUT' and typ == 'date': el.fill(random.choice(['2026-12-01', '2025-01-01', ''])); el.dispatch_event('change'); act = f'date {label}'
             elif tag == 'INPUT' and typ == 'file': continue
             elif tag == 'SELECT':

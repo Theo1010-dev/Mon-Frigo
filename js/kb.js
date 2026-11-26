@@ -20,7 +20,7 @@ export class KB {
   }
   add(i) {
     if (this.byId.has(i.id)) return;
-    this.list.push(i); this.byId.set(i.id, i); this._groups = null;
+    this.list.push(i); this.byId.set(i.id, i); this._groups = null; this._subs = null;
     for (const a of [i.n, ...i.al]) { const k = norm(a); if (k && !this.idx.has(k)) this.idx.set(k, i.id); }
   }
   get(id) { return this.byId.get(id) || null; }
@@ -29,7 +29,9 @@ export class KB {
   subsOf(id) {
     const k = this.byId.get(id); if (!k || !k.sub) return [];
     if (!this._groups) { this._groups = new Map(); for (const i of this.list) if (i.sub) { if (!this._groups.has(i.sub)) this._groups.set(i.sub, []); this._groups.get(i.sub).push(i.id); } }
-    return this._groups.get(k.sub).filter(x => x !== id);
+    if (!this._subs) this._subs = new Map();
+    let r = this._subs.get(id); if (!r) { r = this._groups.get(k.sub).filter(x => x !== id); this._subs.set(id, r); }
+    return r;
   }
   resolve(text) {
     const n = norm(text); if (!n) return null;

@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 import { S, set, setPref, mutate, ctx, exportAll, resetAll, VERSION } from './state.js';
 import * as A from './actions.js';
 import { ZONES, status, statusText, expiringSoon, sortStock } from './stock.js';
-import { score, allowed, search, seasonal, MOMENTS, inMoment, cuisineFamily, missingEquip } from './recipes.js';
+import { score, allowed, search, seasonal, MOMENTS, inMoment, cuisineFamily, missingEquip, equipName, EQUIP_EMOJI } from './recipes.js';
 import { SLOTS, clearFridge, dishEmoji } from './plan.js';
 import { fmtQty, toGrams } from './units.js';
 import { todayISO, fmtDateLong, fmtDateShort, money, daysBetween, norm } from './util.js';
@@ -188,12 +188,14 @@ export function viewStock() {
 // ================= RECETTES =================
 // une seule ligne de « moments » (plats, entrées, apéro…), quelques puces rapides, le reste dans « Filtres »
 const QUICK = [['cook', 'Faisable maintenant'], ['anti', 'Anti-gaspi'], ['fast', 'Rapide'], ['veg', 'Végé'], ['season', 'De saison'], ['fav', 'Favoris']];
-const filterCount = () => RUI.cats.size + RUI.cuis.size + (RUI.maxTime ? 1 : 0) + (RUI.sort !== 'perso' ? 1 : 0) + ['chef', 'mine', 'cheap', 'never'].filter(k => RUI.quick[k]).length;
+const filterCount = () => RUI.cats.size + RUI.cuis.size + RUI.equip.size + (RUI.maxTime ? 1 : 0) + (RUI.sort !== 'perso' ? 1 : 0) + ['chef', 'mine', 'cheap', 'never', 'myEquip'].filter(k => RUI.quick[k]).length;
 function computeRecipes() {
   const p = S.data.prefs, c = ctx(); let list = RUI.q.trim() ? search(S.cat, RUI.q) : S.cat.list.slice();
   // une recette qui demande un appareil absent reste dans la liste, grisée et rangée à la fin
   list = list.filter(r => r.custom || allowed(r, p, kb, true));
   if (RUI.kitchen) list = list.filter(r => r.k === RUI.kitchen);
+  // appareil choisi dans les filtres (« none » = sans appareil, sans cuisson)
+  if (RUI.equip.size) list = list.filter(r => (r.e || []).some(e => RUI.equip.has(e)) || (RUI.equip.has('none') && !r.custom && !(r.e || []).length));
   const Q = RUI.quick;
   if (RUI.moment !== 'all') list = list.filter(r => inMoment(r, RUI.moment));
   if (Q.fast) list = list.filter(r => r.m <= 20); if (Q.chef) list = list.filter(r => r.d !== 'Facile' || (r.g || []).includes('week-end')); if (Q.season) { const mo = parseInt(todayISO().slice(5, 7)); list = list.filter(r => seasonal(r, kb, mo)); } if (Q.veg) list = list.filter(r => r.veg); if (Q.fav) list = list.filter(r => S.data.fav.includes(r.id)); if (Q.mine) list = list.filter(r => r.custom);
@@ -201,6 +203,7 @@ function computeRecipes() {
   if (Q.never) { const done = new Set(S.data.history.map(x => x.rid)); list = list.filter(r => !done.has(r.id)); }
   if (RUI.cats.size) list = list.filter(r => RUI.cats.has(r.c)); if (RUI.cuis.size) list = list.filter(r => RUI.cuis.has(cuisineFamily(r))); if (RUI.maxTime) list = list.filter(r => r.m <= RUI.maxTime);
   let sc = list.map(r => ({ r, sc: score(r, p.people || 2, c), lock: r.custom ? [] : missingEquip(r, p) }));
+  if (Q.myEquip) sc = sc.filter(x => !x.lock.length);
   if (Q.cook) sc = sc.filter(x => !x.lock.length && x.sc.cov.all && x.sc.cov.total > 0); if (Q.anti) sc = sc.filter(x => !x.lock.length && x.sc.cov.expiringUsed.length > 0);
   if (RUI.sort === 'rapide') sc.sort((a, b) => a.r.m - b.r.m); else if (RUI.sort === 'eco') sc.sort((a, b) => a.r.costPer - b.r.costPer); else if (RUI.sort === 'az') sc.sort((a, b) => a.r.t.localeCompare(b.r.t, 'fr')); else if (!RUI.q.trim()) sc.sort((a, b) => b.sc.score - a.sc.score);
   return [...sc.filter(x => !x.lock.length), ...sc.filter(x => x.lock.length)];
@@ -224,7 +227,8 @@ export function viewRecipes() {
   let tm; q.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { RUI.q = q.value; RUI.shown = 30; draw(); }, 120); });
   const moments = h('div', { class: 'moments', role: 'radiogroup', 'aria-label': 'Moment du repas' }, MOMENTS.map(([k, e, l]) => h('button', { type: 'button', role: 'radio', 'aria-checked': String(RUI.moment === k), class: 'mo' + (RUI.moment === k ? ' on' : ''), onclick: () => { RUI.moment = k; RUI.shown = 30; haptic(5); nav.render(); } }, h('span', { class: 'mo-e', 'aria-hidden': 'true' }, e), h('span', { class: 'mo-l' }, l))));
   const nf = filterCount();
-  const chips = h('div', { class: 'chips scroll' }, RUI.kitchen ? h('button', { type: 'button', class: 'chip on', 'aria-label': `Cuisine ${RUI.kitchen}, retirer ce filtre`, onclick: () => { RUI.kitchen = ''; RUI.shown = 30; nav.render(); } }, `${kitchenEmoji(RUI.kitchen)} ${RUI.kitchen} ✕`) : null, btn(nf ? `Filtres (${nf})` : 'Filtres', { class: 'chip' + (nf ? ' on' : ''), onclick: () => openFilters(() => { RUI.shown = 30; nav.render(); }) }, 'filter'), QUICK.map(([k, l]) => chip(l, RUI.quick[k], () => { RUI.quick[k] = !RUI.quick[k]; RUI.shown = 30; nav.render(); })));
+  const equipChips = [...RUI.equip].map(k => { const l = k === 'none' ? 'Sans cuisson' : equipName(k); return h('button', { type: 'button', class: 'chip on', 'aria-label': `Appareil ${l}, retirer ce filtre`, onclick: () => { RUI.equip.delete(k); RUI.shown = 30; nav.render(); } }, `${k === 'none' ? '🧊' : EQUIP_EMOJI[k]} ${l} ✕`); });
+  const chips = h('div', { class: 'chips scroll' }, RUI.kitchen ? h('button', { type: 'button', class: 'chip on', 'aria-label': `Cuisine ${RUI.kitchen}, retirer ce filtre`, onclick: () => { RUI.kitchen = ''; RUI.shown = 30; nav.render(); } }, `${kitchenEmoji(RUI.kitchen)} ${RUI.kitchen} ✕`) : null, equipChips, btn(nf ? `Filtres (${nf})` : 'Filtres', { class: 'chip' + (nf ? ' on' : ''), onclick: () => openFilters(() => { RUI.shown = 30; nav.render(); }) }, 'filter'), QUICK.map(([k, l]) => chip(l, RUI.quick[k], () => { RUI.quick[k] = !RUI.quick[k]; RUI.shown = 30; nav.render(); })));
   const more = h('div');
   el.append(h('div', { class: 'stack' }, q, moments, chips), countEl, list, more);
   let io;

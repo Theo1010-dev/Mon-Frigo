@@ -3,13 +3,15 @@ import * as A from './actions.js';
 import { h, btn, openSheet, confirmSheet, toast, stepper, seg, chip, field, plate, meta, tint, clear, haptic } from './ui.js';
 import { icon } from './icons.js';
 import { S, mutate, set, ensureIng, rebuildCatalogue } from './state.js';
-import { coverage, scaleIngredients, CUISINES, missingEquip } from './recipes.js';
+import { coverage, scaleIngredients, CUISINES, missingEquip, EQUIP, EQUIP_EMOJI, equipName } from './recipes.js';
 import { withArticle, addEquip } from './equipment.js';
 import { fmtQty, UNITS_UI, canonUnit } from './units.js';
 import { todayISO, addDays, dayName, fmtDateShort, money, uid } from './util.js';
 import { SLOTS } from './plan.js';
 import { num, RUI, resetRUI } from './nav.js';
 import { tx, celebrate } from './theme.js';
+// appareils de la recette, dans l'ordre de « Mon équipement » : « Four, plaques », « Cookeo », « Sans cuisson »
+const appliances = r => { const l = EQUIP.filter(([k]) => (r.e || []).includes(k)).map(([k]) => equipName(k)); return l.length ? l.map((x, i) => i ? x.toLowerCase().replace('cookeo', 'Cookeo').replace('thermomix', 'Thermomix') : x).join(', ') : 'Sans cuisson'; };
 
 const kb = S.kb;
 
@@ -41,7 +43,7 @@ export function openRecipe(rid, opts = {}) {
     if (cov.missing.length) ingBox.append(btn(`Ajouter ${cov.missing.length > 1 ? `les ${cov.missing.length} produits manquants` : 'le produit manquant'} aux courses`, { class: 'btn soft block', onclick: () => { const n = A.addMissingToShop(cov.missing); toast(n ? `${n} produit${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''} aux courses` : 'Déjà dans tes courses'); } }, 'cart'));
   }
   const top = h('div', { class: 'r-top', style: tint(r) }, plate(r, kb, 'xxl'), h('h1', null, r.t),
-    meta([['clock', `${r.m} min`], ['utensils', r.d], r.costKnown && r.costPer > 0 ? ['coin', `≈ ${money(r.costPer)} par pers.`] : null]),
+    meta([['clock', `${r.m} min`], ['utensils', r.d], r.costKnown && r.costPer > 0 ? ['coin', `≈ ${money(r.costPer)} par pers.`] : null, r.custom ? null : ['flame', appliances(r)]]),
     h('div', { class: 'badges' }, h('span', { class: 'badge' }, SOURCE_LABEL[r.o] || 'Recette'), h('span', { class: 'badge' }, r.c), r.veg ? h('span', { class: 'badge ok' }, 'Végétarien') : null, h('span', { class: 'badge', title: 'Indice d’équilibre indicatif, pas un avis nutritionnel' }, r.bal.label)));
   const servRow = h('div', { class: 'serv-row' }, h('h2', null, 'Pour'), stepper(serv, { min: 1, max: 12, fmt: v => `${v} personne${v > 1 ? 's' : ''}`, onChange: v => { serv = v; drawIng(); } }));
   const share = h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Partager la recette', onclick: async () => {
@@ -179,6 +181,8 @@ export function openFilters(onApply) {
   const flag = (k, l) => chip(l, RUI.quick[k], () => { RUI.quick[k] = !RUI.quick[k]; draw(); });
   const draw = () => { clear(body); body.append(
     h('div', { class: 'field' }, h('span', { class: 'lab' }, 'Temps maximum'), h('div', { class: 'chips wrap' }, [[0, 'Peu importe'], [15, '15 min'], [30, '30 min'], [45, '45 min'], [60, '1 h']].map(([v, l]) => chip(l, RUI.maxTime === v, () => { RUI.maxTime = v; draw(); })))),
+    h('div', { class: 'field' }, h('span', { class: 'lab' }, 'Appareil'), h('div', { class: 'chips wrap' }, chip('🧊 Sans cuisson', RUI.equip.has('none'), () => toggle(RUI.equip, 'none')), EQUIP.map(([k, l]) => chip(`${EQUIP_EMOJI[k]} ${l}`, RUI.equip.has(k), () => toggle(RUI.equip, k)))),
+      h('div', { class: 'chips wrap' }, flag('myEquip', '✅ Seulement avec mon équipement'))),
     h('div', { class: 'field' }, h('span', { class: 'lab' }, 'Cuisine'), h('div', { class: 'chips wrap' }, CUISINES.map(([k, l]) => chip(l, RUI.cuis.has(k), () => toggle(RUI.cuis, k))))),
     h('div', { class: 'field' }, h('span', { class: 'lab' }, 'Type de plat'), h('div', { class: 'chips wrap' }, cats.map(c => chip(c, RUI.cats.has(c), () => toggle(RUI.cats, c))))),
     h('div', { class: 'field' }, h('span', { class: 'lab' }, 'Envie de…'), h('div', { class: 'chips wrap' }, flag('cheap', '💰 Petit budget'), flag('never', '✨ Jamais cuisinées'), flag('chef', '👨‍🍳 Plus élaborées'), flag('mine', '📒 Mes recettes'))),

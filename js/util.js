@@ -11,7 +11,10 @@ function toISO(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.
 export function todayISO() { return toISO(new Date()); }
 export function parseISO(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d, 12); }
 export function addDays(iso, n) { const d = parseISO(iso); d.setDate(d.getDate() + n); return toISO(d); }
-export function daysBetween(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+// écart en jours ; les mêmes dates reviennent des milliers de fois (stock × recettes) : on garde leur valeur
+const TIME = new Map();
+const timeOf = iso => { let t = TIME.get(iso); if (t === undefined) { if (TIME.size > 4000) TIME.clear(); t = +parseISO(iso); TIME.set(iso, t); } return t; };
+export function daysBetween(a, b) { return Math.round((timeOf(b) - timeOf(a)) / 86400000); }
 export function weekStart(iso) { const d = parseISO(iso); const wd = (d.getDay() + 6) % 7; d.setDate(d.getDate() - wd); return toISO(d); }
 const JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 export const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];

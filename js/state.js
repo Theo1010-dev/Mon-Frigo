@@ -5,7 +5,7 @@ import * as db from './db.js';
 import { todayISO, norm } from './util.js';
 import { TYPES, guessType } from './types.js';
 
-export const VERSION = '1.14.0';
+export const VERSION = '1.15.0';
 // Version en ligne : tous les fichiers à plat (aucun dossier à envoyer sur GitHub). Code source : dossiers assets/ et data/.
 const BUILT = typeof __BUILD__ !== 'undefined';
 export const asset = f => (BUILT ? '' : 'assets/') + f;

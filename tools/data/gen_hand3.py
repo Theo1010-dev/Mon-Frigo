@@ -143,10 +143,10 @@ def recipes():
       [("mascarpone", 2.5), ("oeufs", 0.75), ("sucre", 1), ("biscuits", 2), ("cafe", 4), ("chocolat", 0.2)],
       ["Préparer 20 cl de café fort et le laisser refroidir.", "Séparer les blancs des jaunes. Fouetter les jaunes avec le sucre, puis ajouter le mascarpone.",
        "Monter les blancs en neige et les incorporer délicatement à la crème.", "Tremper rapidement les biscuits dans le café et alterner couches de biscuits et de crème. Râper du chocolat dessus et réfrigérer au moins 4 h."], "Italienne", meal=D, serv=4)
-    P("Gaufres", "Desserts", 30, ["plaques"], ["dessert", "goûter"],
+    P("Gaufres", "Desserts", 30, ["gaufrier"], ["dessert", "goûter"],
       [("farine", 2), ("lait", 2.5), ("oeufs", 0.5), ("beurre", 2.5), ("sucre", 0.5), "levure"],
       ["Mélanger la farine, la levure et le sucre. Ajouter les œufs, puis le lait petit à petit en fouettant.", "Incorporer le beurre fondu. Laisser reposer 15 min.",
-       "Cuire dans un gaufrier bien chaud environ 4 min par gaufre. (Sans gaufrier, la même pâte fait de très bons pancakes à la poêle.)"], "Belge", meal=D, serv=4)
+       "Cuire dans le gaufrier bien chaud et graissé, environ 4 min par gaufre, sans l'ouvrir avant la fin."], "Belge", meal=D, serv=4)
     P("Quatre-quarts", "Desserts", 55, ["four"], ["dessert", "four", "économique"],
       [("oeufs", 0.75), ("sucre", 2.5), ("farine", 1.25), ("beurre", 7.5), ("levure", 0.5)],
       ["Préchauffer le four à 180 °C. Peser les œufs : il faut le même poids de sucre, de farine et de beurre (environ 150 g chacun).", "Fouetter les œufs et le sucre, ajouter le beurre fondu, puis la farine et la levure.",

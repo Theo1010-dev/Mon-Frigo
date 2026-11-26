@@ -219,9 +219,9 @@ t('assistant : abréviations, fautes de frappe, plusieurs demandes', () => {
   eq(splitRequests('ajoute du lait et des œufs aux courses'), ['ajoute du lait et des œufs aux courses']);
   eq(intent(fx('cb de tps se garde le poulet')), 'keep');
 });
-t('7 appareils : chacun compte, et l’assistant comprend « au air fryer », « au Cookeo »', () => {
+t('10 appareils : chacun compte, et l’assistant comprend « au air fryer », « au Cookeo », « au barbecue »', () => {
   const by = k => cat.list.filter(r => (r.e || []).includes(k)).length, all = EQUIP.map(([k]) => k);
-  eq(all, ['plaques', 'four', 'micro-ondes', 'mixeur', 'air_fryer', 'thermomix', 'cookeo']);
+  eq(all, ['plaques', 'four', 'micro-ondes', 'mixeur', 'air_fryer', 'thermomix', 'cookeo', 'barbecue', 'raclette', 'gaufrier']);
   for (const k of all) if (!by(k)) throw new Error('aucune recette pour ' + k);
   if (by('cookeo') < 10) throw new Error('recettes Cookeo : ' + by('cookeo'));
   const f = cat.list.find(r => r.t === 'Frites maison au air fryer');
@@ -229,6 +229,14 @@ t('7 appareils : chacun compte, et l’assistant comprend « au air fryer », «
   eq([findWish('une recette au air fryer').equip, findWish('un truc au thermomix').equip, findWish('une recette au cookeo').equip, findWish('un plat au multicuiseur').equip, findWish('une idée rapide').equip], ['air_fryer', 'thermomix', 'cookeo', 'cookeo', undefined]);
   const c = cat.list.find(r => r.t === 'Bœuf bourguignon au Cookeo'); eq([missingEquip(c, { equip: ['plaques', 'four'] }), missingEquip(c, { equip: all })], [['cookeo'], []]);
   const ck = know('combien de temps cuire le riz au cookeo'); if (!ck || !ck.lines.join(' ').includes('8 min')) throw new Error('cookeo');
+  eq([findWish('une idée au barbecue').equip, findWish('des grillades à la plancha').equip, findWish('une raclette ce soir').equip, findWish('une recette avec du fromage à raclette').equip, findWish('des gaufres pour le goûter').equip, findWish('un gratin au four').equip],
+    ['barbecue', 'barbecue', 'raclette', undefined, 'gaufrier', 'four']);
+  eq(missingEquip(cat.list.find(r => r.t === 'Gaufres'), { equip: ['plaques', 'four'] }), ['gaufrier']);
+  if (!know('combien de temps cuire des merguez au barbecue').lines.join(' ').includes('10 à 12 min')) throw new Error('barbecue');
+  if (!know('combien de fromage par personne pour une raclette').lines.join(' ').includes('200 g')) throw new Error('raclette');
+  if (!know('mes gaufres collent au gaufrier comment faire')) throw new Error('gaufrier');
+  // le Thermomix mixe lui-même : jamais « il faut un mixeur » en plus
+  if (cat.list.some(r => (r.e || []).includes('thermomix') && r.e.includes('mixeur'))) throw new Error('thermomix + mixeur');
   const k = know('combien de temps les frites au air fryer'); if (!k || !k.lines.join(' ').includes('200 °C')) throw new Error('air fryer');
   if (!know('comment adapter une recette au thermomix')) throw new Error('thermomix');
 });

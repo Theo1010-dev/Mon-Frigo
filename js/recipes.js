@@ -4,18 +4,21 @@ import { toGrams, canonUnit } from './units.js';
 import { available, status, lotsOf } from './stock.js';
 
 // chaque appareil compte : une recette qui en demande un que tu n'as pas est grisée
-const EQUIP_NEEDED = { plaques: 1, four: 1, 'micro-ondes': 1, mixeur: 1, air_fryer: 1, thermomix: 1, cookeo: 1 };
-export const EQUIP = [['plaques', 'Plaques'], ['four', 'Four'], ['micro-ondes', 'Micro-ondes'], ['mixeur', 'Mixeur'], ['air_fryer', 'Air fryer'], ['thermomix', 'Thermomix'], ['cookeo', 'Cookeo']];
-export const EQUIP_EMOJI = { plaques: '🔥', four: '♨️', 'micro-ondes': '⏲️', mixeur: '🥤', air_fryer: '🍟', thermomix: '🥣', cookeo: '🍲' };
+const EQUIP_NEEDED = { plaques: 1, four: 1, 'micro-ondes': 1, mixeur: 1, air_fryer: 1, thermomix: 1, cookeo: 1, barbecue: 1, raclette: 1, gaufrier: 1 };
+export const EQUIP = [['plaques', 'Plaques'], ['four', 'Four'], ['micro-ondes', 'Micro-ondes'], ['mixeur', 'Mixeur'], ['air_fryer', 'Air fryer'], ['thermomix', 'Thermomix'], ['cookeo', 'Cookeo'], ['barbecue', 'Barbecue'], ['raclette', 'Raclette'], ['gaufrier', 'Gaufrier']];
+export const EQUIP_EMOJI = { plaques: '🔥', four: '♨️', 'micro-ondes': '⏲️', mixeur: '🥤', air_fryer: '🍟', thermomix: '🥣', cookeo: '🍲', barbecue: '🍖', raclette: '🧀', gaufrier: '🧇' };
 export const equipName = k => (EQUIP.find(e => e[0] === k) || [k, k])[1];
-// dans une phrase : « des plaques de cuisson », « un four », « un Thermomix », « un Cookeo »
-const EQUIP_TXT = { plaques: ['des', 'plaques de cuisson'], four: ['un', 'four'], 'micro-ondes': ['un', 'micro-ondes'], mixeur: ['un', 'mixeur'], air_fryer: ['un', 'air fryer'], thermomix: ['un', 'Thermomix'], cookeo: ['un', 'Cookeo'] };
+// dans une phrase : « des plaques de cuisson », « un four », « un Thermomix », « un appareil à raclette »
+const EQUIP_TXT = { plaques: ['des', 'plaques de cuisson'], four: ['un', 'four'], 'micro-ondes': ['un', 'micro-ondes'], mixeur: ['un', 'mixeur'], air_fryer: ['un', 'air fryer'], thermomix: ['un', 'Thermomix'], cookeo: ['un', 'Cookeo'], barbecue: ['un', 'barbecue'], raclette: ['un', 'appareil à raclette'], gaufrier: ['un', 'gaufrier'] };
 export const equipText = k => (EQUIP_TXT[k] || ['', k])[1];
 export const equipWithArticle = k => (EQUIP_TXT[k] || ['un', k]).join(' ');
 // appareils qui manquent pour faire cette recette (four, mixeur…)
+const DEFAULT_EQ = new Set(['plaques', 'four', 'micro-ondes']), EQ_SET = new WeakMap();
+const equipSet = prefs => { const l = prefs && prefs.equip; if (!l) return DEFAULT_EQ; let s = EQ_SET.get(l); if (!s) { s = new Set(l); EQ_SET.set(l, s); } return s; };
 export function missingEquip(r, prefs) {
-  const eq = new Set((prefs && prefs.equip) || ['plaques', 'four', 'micro-ondes']);
-  return (r.e || []).filter(e => EQUIP_NEEDED[e] && !eq.has(e));
+  if (!r.e || !r.e.length) return [];
+  const eq = equipSet(prefs);
+  return r.e.filter(e => EQUIP_NEEDED[e] && !eq.has(e));
 }
 
 export class Catalogue {
@@ -37,11 +40,12 @@ export class Catalogue {
     const meat = flags.has('meat') || flags.has('fish') || flags.has('shell');
     const veg = !meat; const vegan = veg && !flags.has('dairy') && !flags.has('egg') && !ing.some(x => x[0] === 'miel');
     const tags = new Set(r.g || []); if (veg) tags.add('végétarien'); if (vegan) tags.add('végétalien');
-    const text = norm([r.t, r.c, r.k, ...ing.map(x => kb.name(x[0], x[0])), ...(r.g || [])].join(' '));
     return { ...r, i: ing, flags, veg, vegan, pork: flags.has('pork'), gluten: flags.has('gluten'), nuts: flags.has('nuts'), shell: flags.has('shell'),
-      cost: round(cost, 2), costPer: round(cost / (r.s || 2), 2), costKnown, tags: [...tags], text, titleN: norm(r.t), bal: balance(r, ing, kb), custom: !!r.custom };
+      cost: round(cost, 2), costPer: round(cost / (r.s || 2), 2), costKnown, tags: [...tags], bal: balance(r, ing, kb), custom: !!r.custom };
   }
   get(id) { return this.byId.get(id); }
+  // texte normalisé pour la recherche, calculé la première fois qu'on cherche
+  textOf(r) { if (r.text === undefined) { r.text = norm([r.t, r.c, r.k, ...r.i.map(x => this.kb.name(x[0], x[0])), ...(r.g || []), ...(r.e || []).map(equipName)].join(' ')); r.titleN = norm(r.t); } return r.text; }
 }
 
 // indice d'équilibre INDICATIF (pas un Nutri-Score)
@@ -124,6 +128,14 @@ function coverageRaw(r, servings, stock, kb, today) {
   return { rows, ratio: real.length ? (ok + subs * 0.75) / real.length : 1, missing, ok: ok + subs, subs, total: real.length, all: missing.length === 0, expiringUsed: real.filter(x => x.expiring !== false && x.state !== 'none') };
 }
 
+// listes de goûts normalisées une fois (mêmes tableaux d'un rendu à l'autre), noms d'ingrédients normalisés une fois
+const NL = new WeakMap(), EMPTY = [];
+const normList = l => { if (!l || !l.length) return EMPTY; let x = NL.get(l); if (!x) { x = l.map(norm).filter(Boolean); NL.set(l, x); } return x; };
+const NAMES = new WeakMap();
+const nameN = (kb, id) => { let m = NAMES.get(kb); if (!m) { m = new Map(); NAMES.set(kb, m); } let n = m.get(id); if (n === undefined) { n = norm(kb.name(id, id)); m.set(id, n); } return n; };
+// dernière date où chaque recette a été cuisinée (recalculé seulement quand l'historique change)
+const LAST = new WeakMap();
+const lastCooked = history => { let m = LAST.get(history); if (!m) { m = new Map(); for (const x of history) if (!m.has(x.rid) || x.date > m.get(x.rid)) m.set(x.rid, x.date); LAST.set(history, m); } return m; };
 // filtres durs : régime, aliments évités, équipement
 // la recette respecte-t-elle le régime, les allergies, les goûts… et l'équipement (sauf si ignoreEquip) ?
 export function allowed(r, prefs, kb, ignoreEquip = false) {
@@ -135,14 +147,23 @@ export function allowed(r, prefs, kb, ignoreEquip = false) {
   if (p.noGluten && r.gluten) return false;
   if (p.noNuts && r.nuts) return false;
   if (p.noShell && r.shell) return false;
-  const bad = (p.dislikes || []).map(norm).filter(Boolean);
-  if (bad.length && r.i.some(([id]) => { const n = norm(kb.name(id, id)); return bad.some(b => n.includes(b) || b.includes(n) || id === b); })) return false;
+  const bad = normList(p.dislikes);
+  if (bad.length && r.i.some(([id]) => { const n = nameN(kb, id); return bad.some(b => n.includes(b) || b.includes(n) || id === b); })) return false;
   if (bad.includes('epice') && (r.g || []).includes('épicé')) return false;
   return ignoreEquip || !missingEquip(r, p).length;
 }
 
-// score + raisons ; ctx = { stock, prefs, history, fav, ratings, today, kb }
+// score + raisons ; ctx = { stock, prefs, history, fav, ratings, today, kb, habits }
+// mémorisé tant que rien ne change (mêmes stock, réglages, historique… : l'état n'est jamais modifié sur place)
+const SC = { deps: [], m: new Map() };
 export function score(r, servings, ctx) {
+  const deps = [ctx.stock, ctx.prefs, ctx.history, ctx.fav, ctx.ratings, ctx.today, ctx.habits, ctx.kb, ctx.kb && ctx.kb.pantryV];
+  if (deps.some((d, i) => d !== SC.deps[i])) { SC.deps = deps; SC.m = new Map(); }
+  let byR = SC.m.get(servings); if (!byR) { byR = new WeakMap(); SC.m.set(servings, byR); }
+  let res = byR.get(r); if (!res) { res = scoreRaw(r, servings, ctx); byR.set(r, res); }
+  return res;
+}
+function scoreRaw(r, servings, ctx) {
   const { stock, prefs = {}, history = [], fav = [], ratings = {}, today, kb } = ctx;
   const cov = coverage(r, servings, stock, kb, today);
   let s = 0; const why = [];
@@ -162,10 +183,10 @@ export function score(r, servings, ctx) {
   if (prefs.maxTime && r.m > prefs.maxTime) s -= 12;
   if (fav.includes(r.id)) { s += 10; why.push(['Dans tes favoris', 2]); }
   const rt = ratings[r.id]; if (rt) { s += (rt - 3) * 6; if (rt >= 4) why.push([`Tu l'as notée ${rt}/5`, 2]); }
-  const last = history.filter(h => h.rid === r.id).map(h => h.date).sort().pop();
+  const last = lastCooked(history).get(r.id);
   if (last) { const d = daysBetween(last, today); if (d < 7) { s -= 28; } else if (d < 14) s -= 12; else if (d > 28 && (rt || 0) >= 4) { s += 4; why.push(['Pas cuisinée depuis un moment', 1]); } }
-  const likes = (prefs.likes || []).map(norm).filter(Boolean);
-  if (likes.length) { const n = r.i.filter(([id]) => likes.some(l => norm(kb.name(id, id)).includes(l))).length; if (n) { s += Math.min(12, n * 4); why.push(['Contient des aliments que tu aimes', 1]); } }
+  const likes = normList(prefs.likes);
+  if (likes.length) { const n = r.i.filter(([id]) => likes.some(l => nameN(kb, id).includes(l))).length; if (n) { s += Math.min(12, n * 4); why.push(['Contient des aliments que tu aimes', 1]); } }
   if (prefs.budget && r.costKnown) { const perMeal = prefs.budget / Math.max(1, (prefs.people || 2) * 7 / 2 * 1.4); if (r.costPer * (prefs.people || 2) > perMeal * 1.6) s -= 8; }
   const hb = ctx.habits;
   if (hb && hb.n >= 3) {
@@ -186,7 +207,7 @@ export function search(cat, query) {
   if (!t.length) return cat.list.slice();
   const out = [];
   for (const r of cat.list) {
-    if (!t.every(w => r.text.includes(w))) continue;
+    const text = cat.textOf(r); if (!t.every(w => text.includes(w))) continue;
     let s = 0; for (const w of t) { if (r.titleN.startsWith(w)) s += 3; else if (r.titleN.includes(w)) s += 2; else s += 1; }
     out.push([s, r]);
   }

@@ -29,15 +29,20 @@ export function statusText(item, today) {
 }
 export const matchKey = it => it.ing || 'x:' + norm(it.name);
 
+// index du stock par produit, recalculé seulement quand le stock change (le stock n'est jamais modifié sur place)
 const INDEX = new WeakMap();
 function indexOf(stock) {
-  let m = INDEX.get(stock);
-  if (!m) { m = new Map(); for (const it of stock) { const k = matchKey(it); if (!m.has(k)) m.set(k, []); m.get(k).push(it); } INDEX.set(stock, m); }
-  return m;
+  let x = INDEX.get(stock);
+  if (!x) { const m = new Map(); for (const it of stock) { const k = matchKey(it); if (!m.has(k)) m.set(k, []); m.get(k).push(it); } x = { m, live: new Map(), day: null }; INDEX.set(stock, x); }
+  return x;
 }
+// lots utilisables d'un produit (non périmés, quantité > 0) ; résultat partagé : ne jamais le modifier sur place
 export function lotsOf(stock, key, { includeExpired = false, today } = {}) {
-  const lots = indexOf(stock).get(key); if (!lots) return [];
-  return lots.filter(it => (includeExpired || !today || status(it, today).key !== 'expired') && it.qty > 0);
+  const x = indexOf(stock), lots = x.m.get(key); if (!lots) return [];
+  if (includeExpired || !today) return lots.filter(it => it.qty > 0);
+  if (x.day !== today) { x.day = today; x.live.clear(); }
+  let r = x.live.get(key); if (!r) { r = lots.filter(it => it.qty > 0 && status(it, today).key !== 'expired'); x.live.set(key, r); }
+  return r;
 }
 // disponibilité d'un ingrédient exprimée dans l'unité demandée
 export function available(stock, ing, key, unit, today) {
@@ -55,7 +60,7 @@ const byExpiry = (a, b) => (a.expiry || '9999') < (b.expiry || '9999') ? -1 : (a
 // consomme `qty unit` d'un ingrédient (FIFO sur la date limite) ; ne produit jamais de quantité négative
 export function consume(stock, ing, key, qty, unit, today) {
   let left = qty, taken = [];
-  const lots = lotsOf(stock, key, { today }).sort(byExpiry);
+  const lots = [...lotsOf(stock, key, { today })].sort(byExpiry);
   const next = stock.map(s => ({ ...s }));
   for (const lot of lots) {
     if (left <= 1e-9) break;

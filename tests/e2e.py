@@ -191,6 +191,20 @@ with sync_playwright() as p:
         ok = pg.evaluate('''() => { const S = window.__monFrigo.S; return [...document.querySelectorAll('.rec .strong')].slice(0,30).every(e => { const r = S.cat.list.find(x => x.t === e.textContent); return r && r.veg; }); }''')
         assert ok; pg.get_by_role('button', name='Végé', exact=True).click()
 
+    @step('Filtres : appareil (Cookeo), « seulement mon équipement », puce retirable, Effacer')
+    def _():
+        tab('recipes'); pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400)
+        sheet().locator('.chip', has_text='Cookeo').click(); sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(500)
+        titles = [e.inner_text() for e in pg.locator('.rec .strong').all()]; assert len(titles) >= 10 and all('Cookeo' in t for t in titles), titles
+        assert pg.locator('.rgrid .rec.locked').count() == len(titles), 'Cookeo pas coché : grisées'
+        pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400); sheet().locator('.chip', has_text='Seulement avec mon équipement').click(); sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(500)
+        assert pg.locator('.rgrid .rec').count() == 0, 'grisées cachées'
+        pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400); sheet().get_by_role('button', name='Effacer').click(); pg.wait_for_timeout(200); assert sheet().locator('.chip.on', has_text='Cookeo').count() == 0; sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(400)
+        pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400); sheet().locator('.chip', has_text='Sans cuisson').click(); sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(500)
+        nocook = pg.evaluate('''() => { const S = window.__monFrigo.S; return [...document.querySelectorAll('.rec .strong')].slice(0, 30).every(e => { const r = S.cat.list.find(x => x.t === e.textContent); return r && !(r.e || []).length; }); }''')
+        assert nocook and pg.locator('.rgrid .rec').count() > 0, 'sans cuisson'
+        pg.locator('.chips .chip.on', has_text='Sans cuisson').click(); pg.wait_for_timeout(300); assert pg.locator('.chips .chip.on', has_text='Sans cuisson').count() == 0 and pg.locator('.chip', has_text='Filtres (').count() == 0, 'puce retirée'
+
     @step('Semaine : repas libre (sans recette)')
     def _():
         tab('plan'); pg.get_by_role('button', name='Semaine suivante').click(); pg.wait_for_timeout(300); pg.locator('.slot-add').first.click(); pg.wait_for_timeout(400)
@@ -673,7 +687,7 @@ with sync_playwright() as p:
     @step('Équipement : recettes grisées (pas cachées), passeport = liste, « J’ai un four », Ma cuisine')
     def _():
         close_sheets(); pg.click('#meBtn'); pg.wait_for_timeout(300); open_acc('Mon équipement')
-        names = [x.inner_text() for x in pg.locator('.acc.open .pan-tile .pan-n').all()]; assert names == ['Plaques', 'Four', 'Micro-ondes', 'Mixeur', 'Air fryer', 'Thermomix', 'Cookeo'], names
+        names = [x.inner_text() for x in pg.locator('.acc.open .pan-tile .pan-n').all()]; assert names == ['Plaques', 'Four', 'Micro-ondes', 'Mixeur', 'Air fryer', 'Thermomix', 'Cookeo', 'Barbecue', 'Raclette', 'Gaufrier'], names
         pg.locator('.acc.open .pan-tile', has_text='Four').click(); pg.wait_for_timeout(300); assert 'four' not in D()['prefs']['equip'], D()['prefs']['equip']
         pg.click('#meBtn'); pg.wait_for_timeout(300); pg.get_by_role('button', name='Passeport', exact=False).click(); pg.wait_for_timeout(400)
         st = sheet().locator('.stamp', has_text='Lorraine'); n = int(st.locator('.st-c').inner_text().split()[0]); st.click(); pg.wait_for_timeout(700)
@@ -686,7 +700,7 @@ with sync_playwright() as p:
         pg.locator('.chips .chip.on', has_text='Lorraine').click(); pg.wait_for_timeout(300); assert pg.locator('.rgrid .rec').count() > n, 'filtre cuisine retiré'
         tab('stock')
         if pg.get_by_role('tab', name='🏠 Ma cuisine').count(): pg.get_by_role('tab', name='🏠 Ma cuisine').click(); pg.wait_for_timeout(400)
-        if pg.locator('.k-appl').count(): pg.locator('.k-appl').click(); pg.wait_for_timeout(400); assert sheet().locator('.pan-tile').count() == 7 and all(sheet().locator('.pan-tile', has_text=x).count() == 1 for x in ('Air fryer', 'Thermomix', 'Cookeo')), 'fenêtre équipement'; close_sheets(); pg.get_by_role('tab', name='📋 Liste').click(); pg.wait_for_timeout(300)
+        if pg.locator('.k-appl').count(): pg.locator('.k-appl').click(); pg.wait_for_timeout(400); assert sheet().locator('.pan-tile').count() == 10 and all(sheet().locator('.pan-tile', has_text=x).count() == 1 for x in ('Air fryer', 'Thermomix', 'Cookeo', 'Barbecue', 'Raclette', 'Gaufrier')), 'fenêtre équipement'; close_sheets(); pg.get_by_role('tab', name='📋 Liste').click(); pg.wait_for_timeout(300)
 
     @step('Assistant : questions de cuisine, conversions, fautes de frappe, deux demandes d’un coup')
     def _():
@@ -702,6 +716,10 @@ with sync_playwright() as p:
         assert 'Mon équipement' in say('où je règle mon équipement'), 'mode d’emploi'
         assert 'internet' in say('quelle est la capitale du japon'), 'hors sujet honnête'
         assert 'air fryer' in say('une recette au air fryer').lower(), 'air fryer'
+        assert 'barbecue' in say('une idée au barbecue').lower(), 'barbecue'
+        sheet().locator('.msg.bot').last.get_by_role('button', name='Voir les', exact=False).click(); pg.wait_for_timeout(700)
+        assert pg.locator('.chips .chip.on', has_text='Barbecue').count() == 1 and pg.locator('.rgrid .rec').count() >= 5, 'toutes les recettes au barbecue'
+        pg.locator('.chips .chip.on', has_text='Barbecue').click(); pg.wait_for_timeout(300)
         close_sheets()
 
     @step('Navigation : défilement mémorisé par onglet, onglet actif = retour en haut ; fiche recette sans encadré')

@@ -78,11 +78,16 @@ export function findWish(text) {
   if (has(t, 'hasard', 'surprends moi', 'surprise', 'n importe quoi')) w.random = true;
   if (has(t, 'sans cuisson', 'sans four', 'sans cuire', 'sans rien cuire', 'pas de four', 'sans plaque')) w.nocook = true;
   if (has(t, 'leger', 'legere', 'light', 'healthy', 'equilibre', 'sain')) w.light = true;
-  // un appareil précis : « une recette au air fryer », « au Thermomix », « au Cookeo », « au micro-ondes »
+  // un appareil précis : « une recette au air fryer », « au Thermomix », « au Cookeo », « au barbecue », « une raclette »
   if (has(t, 'air fryer', 'airfryer', 'air fryers', 'friteuse sans huile')) w.equip = 'air_fryer';
+  else if (has(t, 'barbecue', 'barbecues', 'barbec', 'bbq', 'plancha', 'grillade', 'grillades')) w.equip = 'barbecue';
+  else if (has(t, 'appareil a raclette', 'une raclette', 'soiree raclette', 'faire une raclette', 'raclette ce soir', 'idee raclette') || (has(t, 'raclette') && !has(t, 'fromage'))) w.equip = 'raclette';
+  else if (has(t, 'gaufrier', 'gaufres', 'gaufre')) w.equip = 'gaufrier';
   else if (has(t, 'cookeo', 'cookeos', 'multicuiseur', 'autocuiseur', 'cocotte minute', 'cocotte-minute')) w.equip = 'cookeo';
   else if (has(t, 'thermomix', 'robot cuiseur', 'monsieur cuisine')) w.equip = 'thermomix';
   else if (has(t, 'micro ondes', 'micro onde', 'microondes')) w.equip = 'micro-ondes';
+  else if (has(t, 'au four')) w.equip = 'four';
+  else if (has(t, 'au mixeur', 'au blender', 'avec le mixeur', 'avec mon mixeur')) w.equip = 'mixeur';
   return w;
 }
 
@@ -209,4 +214,4 @@ export function splitRequests(text) {
   return parts.length > 1 && parts.length <= 4 ? parts : [String(text).trim()];
 }
 // mots-clés des intentions (pour le correcteur)
-export const BRAIN_WORDS = ('airfryer fryer thermomix cookeo multicuiseur autocuiseur appareil appareils equipement perime perimer peremption conserver conserve garder congeler congelateur remplacer remplace substituer statistiques bilan courses acheter planifier planning programme prevu menu dessert desserts apero aperitif entree entrees gouter petit dejeuner diner brunch rapide rapidement facile vegetarien vegetarienne economique budget hasard surprise cuisson cuire leger legere equilibre healthy saison achete fini termine recette recettes manger cuisiner idee idees propose inspire envie aime adore deteste horreur supporte allergique niveau experience succes badge appris habitudes ' + JOURS.join(' ')).split(' ');
+export const BRAIN_WORDS = ('airfryer fryer thermomix cookeo multicuiseur autocuiseur barbecue plancha grillade grillades gaufrier gaufres raclette appareil appareils equipement perime perimer peremption conserver conserve garder congeler congelateur remplacer remplace substituer statistiques bilan courses acheter planifier planning programme prevu menu dessert desserts apero aperitif entree entrees gouter petit dejeuner diner brunch rapide rapidement facile vegetarien vegetarienne economique budget hasard surprise cuisson cuire leger legere equilibre healthy saison achete fini termine recette recettes manger cuisiner idee idees propose inspire envie aime adore deteste horreur supporte allergique niveau experience succes badge appris habitudes ' + JOURS.join(' ')).split(' ');

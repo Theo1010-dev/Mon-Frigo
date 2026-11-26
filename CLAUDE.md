@@ -32,5 +32,6 @@ Utilisateur : Théo, français, pas développeur. Répondre en français, court 
 - Les fenêtres (« sheets ») sont rangées par thème : stock-, plan-, shop-, recipe-, receipt-sheets.js et onboarding.js.
 - N'exporter que ce qui sert ailleurs ; `npm run lint` doit rester sans avertissement.
 - Assistant : `brain.js` comprend la phrase (intentions, abréviations, fautes de frappe, plusieurs demandes), `know.js` contient le savoir de cuisine et le mode d'emploi (fiches à groupes de mots + conversions), `assistant.js` répond avec les données. Tout est hors ligne ; ajouter une fiche = une entrée dans KNOW + un test dans tests/logic.test.mjs.
-- Équipement : `equipment.js`. Une recette qui demande un appareil absent n'est jamais cachée : grisée (`missingEquip`, `allowed(..., ignoreEquip)`).
+- Équipement : `equipment.js` ; liste des appareils dans `recipes.js` (`EQUIP`, `EQUIP_TXT`…). Une recette qui demande un appareil absent n'est jamais cachée : grisée (`missingEquip`, `allowed(..., ignoreEquip)`). Filtre « Appareil » de l'onglet Recettes : `RUI.equip` (+ `quick.myEquip`).
+- Vitesse : `score`, `coverage`, `lotsOf` sont mémorisés tant que l'état ne change pas ; ne jamais modifier stock, historique ou réglages sur place (toujours un nouveau tableau/objet).
 - Recettes : `tools/data/gen_hand*.py`, fonction `H(titre, catégorie, temps, matériel, tags, ingrédients, étapes, cuisine, meal=(...), serv, diff)`. Ingrédients connus : `tools/data/ingredients.py`.

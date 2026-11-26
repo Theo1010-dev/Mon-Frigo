@@ -100,10 +100,13 @@ export function empty(emoji, title, text, action) { return h('div', { class: 'em
 const CAT_TINT = {
   'Pâtes': ['#f4e4c1', '#3b3122'], 'Riz': ['#ece6d8', '#34302a'], 'Poêlées': ['#fbd9c4', '#3e2a20'], 'Curry': ['#f9e19f', '#3b321a'], 'Soupes': ['#f9d5bb', '#3e2a1f'],
   'Salades': ['#d8ebcf', '#22331f'], 'Gratins & four': ['#f5dfb4', '#3a2f1c'], 'Tartes & pizzas': ['#f7d3cb', '#3c2422'], 'Œufs': ['#fdedb5', '#3a341c'], 'Sandwichs': ['#eddcc6', '#352c22'],
-  'Poisson': ['#d1e6ee', '#1c2e35'], 'Plats mijotés': ['#e9d0c7', '#352421'], 'Desserts': ['#f6d5e3', '#3a2230'], 'Petit-déjeuner': ['#fbe4c3', '#3a3022'], 'Mes recettes': ['#e2dbf1', '#2b2538'] };
-const CAT_EMO = { 'Pâtes': '🍝', 'Riz': '🍚', 'Poêlées': '🍳', 'Curry': '🍛', 'Soupes': '🍲', 'Salades': '🥗', 'Gratins & four': '🧀', 'Tartes & pizzas': '🥧', 'Œufs': '🥚', 'Sandwichs': '🥪', 'Poisson': '🐟', 'Plats mijotés': '🥘', 'Desserts': '🍰', 'Petit-déjeuner': '🥞', 'Mes recettes': '👩‍🍳' };
+  'Poisson': ['#d1e6ee', '#1c2e35'], 'Plats mijotés': ['#e9d0c7', '#352421'], 'Grillades': ['#f6d0bc', '#3d2219'], 'Desserts': ['#f6d5e3', '#3a2230'], 'Petit-déjeuner': ['#fbe4c3', '#3a3022'], 'Mes recettes': ['#e2dbf1', '#2b2538'] };
+const CAT_EMO = { 'Pâtes': '🍝', 'Riz': '🍚', 'Poêlées': '🍳', 'Curry': '🍛', 'Soupes': '🍲', 'Salades': '🥗', 'Gratins & four': '🧀', 'Tartes & pizzas': '🥧', 'Œufs': '🥚', 'Sandwichs': '🥪', 'Poisson': '🐟', 'Plats mijotés': '🥘', 'Grillades': '🍢', 'Desserts': '🍰', 'Petit-déjeuner': '🥞', 'Mes recettes': '👩‍🍳' };
 const ROLE_PRI = ['fish', 'meat', 'legume', 'tofu', 'egg', 'dough', 'starch', 'cheese', 'veg', 'fruit', 'leaf'];
+// quelques plats se reconnaissent mieux à leur nom qu'à leur ingrédient principal (une raclette n'est pas du bacon)
+const TITLE_EMO = [[/raclette|fondue savoyarde/i, '🧀'], [/gaufre/i, '🧇'], [/burger/i, '🍔'], [/pizza/i, '🍕'], [/crêpe|pancake/i, '🥞'], [/^brochettes?(?! de fruits)/i, '🍢'], [/épis de maïs/i, '🌽'], [/^(?!moules).*frites/i, '🍟'], [/tacos?\b|fajitas/i, '🌮'], [/wraps?\b|burrito/i, '🌯']];
 export function recipeEmoji(r, kb) {
+  const te = TITLE_EMO.find(([re]) => re.test(r.t)); if (te) return te[1];
   if (CAT_EMO[r.c] && ['Pâtes', 'Soupes', 'Salades', 'Desserts', 'Sandwichs', 'Tartes & pizzas', 'Petit-déjeuner', 'Curry'].includes(r.c)) return CAT_EMO[r.c];
   for (const role of ROLE_PRI) { const f = r.i.map(x => kb.get(x[0])).find(k => k && k.role === role); if (f) return f.emoji; }
   return CAT_EMO[r.c] || '🍽️';

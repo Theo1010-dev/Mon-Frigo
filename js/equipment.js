@@ -1,4 +1,4 @@
-// « Mon équipement » : les appareils de ta cuisine (plaques, four, micro-ondes, mixeur, air fryer, Thermomix, Cookeo).
+// « Mon équipement » : les appareils de ta cuisine (plaques, four, micro-ondes, mixeur, air fryer, Thermomix, Cookeo, barbecue, raclette, gaufrier).
 // Une recette qui demande un appareil que tu n'as pas reste visible, grisée, avec « Il faut un four ».
 import { h, btn, openSheet, toast, clear, haptic } from './ui.js';
 import { icon } from './icons.js';
