@@ -1,5 +1,13 @@
 # Historique des versions de Mon Frigo
 
+## 1.14.0
+- **Cookeo** : 7ᵉ appareil dans « Mon équipement » (et dans « Appareils » de Ma cuisine), avec ses recettes grisées si tu ne l'as pas. 10 recettes au Cookeo (bœuf bourguignon, poulet curry-coco, chili con carne, risotto, dahl de lentilles, blanquette, poulet basquaise, pâtes crémeuses, soupe de légumes, riz au lait) avec les vrais programmes « Dorer » et « Cuisson sous pression ».
+- 5 classiques en plus : soupe à l'oignon gratinée, shakshuka, œufs cocotte, endives braisées au miel, poires Belle-Hélène. 1 200 recettes en tout.
+- Assistant : « une recette au Cookeo », « au multicuiseur » ; temps de cuisson sous pression (riz, pâtes, poulet, bœuf, lentilles, soupe).
+- **Lisibilité** : les textes gris clair (sous-titres, petits compteurs, onglets du bas, « Rien de prévu »…) sont plus foncés dans toutes les ambiances, en clair comme en sombre. Bord de mer : la mer du bandeau est plus claire et le sous-titre ne se confond plus avec elle.
+- Les étiquettes d'une recette (cuisine, catégorie, Végétarien) ne sont plus pâlies par erreur.
+- Mon équipement : 3 appareils par ligne, la dernière ligne centrée.
+
 ## 1.13.4
 - iPhone : consignes d'installation à jour pour iOS 26 (⋯ → Partager → « Sur l'écran d'accueil », « Ouvrir comme app web » activé) et pour Chrome sur iPhone.
 

@@ -1,4 +1,4 @@
-// « Mon équipement » : les appareils de ta cuisine (plaques, four, micro-ondes, mixeur, air fryer, Thermomix).
+// « Mon équipement » : les appareils de ta cuisine (plaques, four, micro-ondes, mixeur, air fryer, Thermomix, Cookeo).
 // Une recette qui demande un appareil que tu n'as pas reste visible, grisée, avec « Il faut un four ».
 import { h, btn, openSheet, toast, clear, haptic } from './ui.js';
 import { icon } from './icons.js';
@@ -14,9 +14,9 @@ export function equipSummary(list = equipNow()) {
 export const withArticle = keys => keys.map(equipWithArticle).join(' et ');
 const needing = k => S.cat.list.filter(r => !r.custom && (r.e || []).includes(k) && allowed(r, S.data.prefs, S.kb, true)).length;
 
-// éditeur réutilisé dans « Moi », l'accueil de bienvenue et la fenêtre dédiée : les 6 appareils, avec le nombre de recettes qui en ont besoin
+// éditeur réutilisé dans « Moi », l’accueil de bienvenue et la fenêtre dédiée : tous les appareils, avec le nombre de recettes qui en ont besoin
 export function equipEditor(get, set) {
-  const box = h('div', { class: 'pan-grid' });
+  const box = h('div', { class: 'pan-grid eq' });
   const draw = () => {
     clear(box); const list = get();
     for (const [k] of EQUIP) {

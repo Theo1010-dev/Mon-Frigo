@@ -16,7 +16,7 @@ export const AMBS = [
 export const MODES = [['auto', 'Auto'], ['light', 'Clair'], ['dark', 'Sombre']];
 // couleurs principales de chaque ambiance (pour les aperçus du sélecteur)
 const SW = { classic: [['#f3f5f7', '#e2017b'], ['#151118', '#ff3d9e']], cottage: [['#f6f0e1', '#3d7a35'], ['#16130c', '#8fcf6f']], sea: [['#f1f6f8', '#1f6fb8'], ['#0c1520', '#5fb0ff']],
-  bistro: [['#f7f1e8', '#a3283a'], ['#151012', '#ff6b7d']], zen: [['#f4f2ec', '#c8553d'], ['#121413', '#ff8a6f']], spring: [['#f3f7f1', '#d1457f'], ['#121714', '#ff7fb3']],
+  bistro: [['#f7f1e8', '#a3283a'], ['#151012', '#ff6b7d']], zen: [['#f4f2ec', '#c45038'], ['#121413', '#ff8a6f']], spring: [['#f3f7f1', '#d1457f'], ['#121714', '#ff7fb3']],
   summer: [['#fdf6e8', '#e0601a'], ['#17130d', '#ff9a4d']], autumn: [['#f8f1ea', '#bf400c'], ['#18110d', '#ff8a4c']], winter: [['#eef3f8', '#2a64c8'], ['#0f141b', '#6aa8ff']] };
 export const swatch = (amb, season, dark) => { const [paper, accent] = SW[amb === 'season' ? season : amb][dark ? 1 : 0]; return { paper, accent }; };
 // réglages d'apparence (reprend l'ancien réglage « theme » pour ne rien perdre)
@@ -353,7 +353,7 @@ const NEW = {
       + `<path d="M0 156 C80 148 170 154 250 158 S360 150 400 154 V190 H0Z" fill="${d ? '#2a2a26' : '#f1dfb8'}"/>` + hut(56, d)
       + `<path d="M100 160 q2 -10 4 0 M106 160 q3 -12 5 0 M250 162 q2 -9 4 0 M256 162 q3 -11 5 0" stroke="${d ? '#4a5a3a' : '#9aa86a'}" stroke-width="1.6" fill="none"/>` + front,
     band: d => `<svg viewBox="0 0 400 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${sky('pb', d ? '#0b1830' : '#cfe8f5', d ? '#16263c' : '#eef7f9')}${d ? `<g class="stars">${stars(10).replace(/cy="(\d+)"/g, (m, y) => `cy="${Math.round(y * .6)}"`)}</g>` : ''}
-      <path d="M0 80 H400 V104 H0Z" fill="${d ? '#163a5a' : '#7cbbe0'}"/>${waves(d ? '#3d6f96' : '#e6f5ff', 4, 84)}<path d="M0 98 C90 92 180 96 260 98 S360 92 400 94 V120 H0Z" fill="${d ? '#2a2a26' : '#f1dfb8'}"/>
+      <path d="M0 80 H400 V104 H0Z" fill="${d ? '#163a5a' : '#b4daf0'}"/>${waves(d ? '#3d6f96' : '#ffffff', 4, 84)}<path d="M0 98 C90 92 180 96 260 98 S360 92 400 94 V120 H0Z" fill="${d ? '#2a2a26' : '#f1dfb8'}"/>
       <path d="M0 112 C100 106 200 110 280 112 S370 106 400 108 V120 H0Z" style="fill:var(--paper)"/></svg>`,
   },
   bistro: {

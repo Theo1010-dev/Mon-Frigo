@@ -9,7 +9,7 @@ Tout fonctionne hors ligne, et tes données restent sur ton téléphone.
 
 ## Ce que fait l'app
 - **Stock** par zone (frigo, congélateur, placard, autres), dates limites estimées, ajout rapide, scanner de code-barres, ticket de caisse, vue « Ma cuisine ».
-- **Recettes** : 1 186 recettes (701 écrites à la main), moments du repas, filtres, recettes perso, mode cuisine avec minuteurs.
+- **Recettes** : 1 200 recettes (715 écrites à la main), moments du repas, filtres, recettes perso, mode cuisine avec minuteurs.
 - **Semaine** : midi/soir, ajout express de n'importe quel plat, déplacement, remplissage automatique selon le stock.
 - **Courses** : générées depuis la semaine, rangées par rayon, partage, rangement dans le stock en un geste.
 - **Frigo, l'assistant** : on lui écrit comme à quelqu'un (fautes et abréviations comprises) ; il connaît ton frigo et la cuisine (cuissons, conversions, astuces). Tout est calculé sur le téléphone.

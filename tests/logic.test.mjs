@@ -7,7 +7,7 @@ import { buildShopping, needsFor, mergeShopping, autoPlan, weekDays, weekStart, 
 import { fmtNum, addDays } from '../js/util.js';
 import { intent, findIngs, findWhen, leftover, shopItems, findWish, isFollowUp, findPeople, findDiet, prefWords, chatNorm, fixTypos, makeVocab, splitRequests, BRAIN_WORDS } from '../js/brain.js';
 import { know, convert as kconvert, KNOW_WORDS } from '../js/know.js';
-import { missingEquip } from '../js/recipes.js';
+import { missingEquip, EQUIP } from '../js/recipes.js';
 import { guessType, TYPES } from '../js/types.js';
 
 const kb = new KB(JSON.parse(fs.readFileSync('data/ingredients.json', 'utf8')));
@@ -219,12 +219,16 @@ t('assistant : abréviations, fautes de frappe, plusieurs demandes', () => {
   eq(splitRequests('ajoute du lait et des œufs aux courses'), ['ajoute du lait et des œufs aux courses']);
   eq(intent(fx('cb de tps se garde le poulet')), 'keep');
 });
-t('6 appareils : chacun compte, et l’assistant comprend « au air fryer »', () => {
-  const by = k => cat.list.filter(r => (r.e || []).includes(k)).length;
-  for (const k of ['plaques', 'four', 'micro-ondes', 'mixeur', 'air_fryer', 'thermomix']) if (!by(k)) throw new Error('aucune recette pour ' + k);
-  const f = cat.list.find(r => r.t === 'Frites maison au air fryer'), all = ['plaques', 'four', 'micro-ondes', 'mixeur', 'air_fryer', 'thermomix'];
+t('7 appareils : chacun compte, et l’assistant comprend « au air fryer », « au Cookeo »', () => {
+  const by = k => cat.list.filter(r => (r.e || []).includes(k)).length, all = EQUIP.map(([k]) => k);
+  eq(all, ['plaques', 'four', 'micro-ondes', 'mixeur', 'air_fryer', 'thermomix', 'cookeo']);
+  for (const k of all) if (!by(k)) throw new Error('aucune recette pour ' + k);
+  if (by('cookeo') < 10) throw new Error('recettes Cookeo : ' + by('cookeo'));
+  const f = cat.list.find(r => r.t === 'Frites maison au air fryer');
   eq([missingEquip(f, { equip: ['plaques', 'four'] }), missingEquip(f, { equip: all }), missingEquip(cat.list.find(r => r.t === 'Pâtes carbonara'), { equip: ['four'] })], [['air_fryer'], [], ['plaques']]);
-  eq([findWish('une recette au air fryer').equip, findWish('un truc au thermomix').equip, findWish('une idée rapide').equip], ['air_fryer', 'thermomix', undefined]);
+  eq([findWish('une recette au air fryer').equip, findWish('un truc au thermomix').equip, findWish('une recette au cookeo').equip, findWish('un plat au multicuiseur').equip, findWish('une idée rapide').equip], ['air_fryer', 'thermomix', 'cookeo', 'cookeo', undefined]);
+  const c = cat.list.find(r => r.t === 'Bœuf bourguignon au Cookeo'); eq([missingEquip(c, { equip: ['plaques', 'four'] }), missingEquip(c, { equip: all })], [['cookeo'], []]);
+  const ck = know('combien de temps cuire le riz au cookeo'); if (!ck || !ck.lines.join(' ').includes('8 min')) throw new Error('cookeo');
   const k = know('combien de temps les frites au air fryer'); if (!k || !k.lines.join(' ').includes('200 °C')) throw new Error('air fryer');
   if (!know('comment adapter une recette au thermomix')) throw new Error('thermomix');
 });

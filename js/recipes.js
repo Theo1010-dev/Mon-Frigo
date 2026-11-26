@@ -4,12 +4,12 @@ import { toGrams, canonUnit } from './units.js';
 import { available, status, lotsOf } from './stock.js';
 
 // chaque appareil compte : une recette qui en demande un que tu n'as pas est grisée
-const EQUIP_NEEDED = { plaques: 1, four: 1, 'micro-ondes': 1, mixeur: 1, air_fryer: 1, thermomix: 1 };
-export const EQUIP = [['plaques', 'Plaques'], ['four', 'Four'], ['micro-ondes', 'Micro-ondes'], ['mixeur', 'Mixeur'], ['air_fryer', 'Air fryer'], ['thermomix', 'Thermomix']];
-export const EQUIP_EMOJI = { plaques: '🔥', four: '♨️', 'micro-ondes': '⏲️', mixeur: '🥤', air_fryer: '🍟', thermomix: '🥣' };
+const EQUIP_NEEDED = { plaques: 1, four: 1, 'micro-ondes': 1, mixeur: 1, air_fryer: 1, thermomix: 1, cookeo: 1 };
+export const EQUIP = [['plaques', 'Plaques'], ['four', 'Four'], ['micro-ondes', 'Micro-ondes'], ['mixeur', 'Mixeur'], ['air_fryer', 'Air fryer'], ['thermomix', 'Thermomix'], ['cookeo', 'Cookeo']];
+export const EQUIP_EMOJI = { plaques: '🔥', four: '♨️', 'micro-ondes': '⏲️', mixeur: '🥤', air_fryer: '🍟', thermomix: '🥣', cookeo: '🍲' };
 export const equipName = k => (EQUIP.find(e => e[0] === k) || [k, k])[1];
-// dans une phrase : « des plaques de cuisson », « un four », « un Thermomix »
-const EQUIP_TXT = { plaques: ['des', 'plaques de cuisson'], four: ['un', 'four'], 'micro-ondes': ['un', 'micro-ondes'], mixeur: ['un', 'mixeur'], air_fryer: ['un', 'air fryer'], thermomix: ['un', 'Thermomix'] };
+// dans une phrase : « des plaques de cuisson », « un four », « un Thermomix », « un Cookeo »
+const EQUIP_TXT = { plaques: ['des', 'plaques de cuisson'], four: ['un', 'four'], 'micro-ondes': ['un', 'micro-ondes'], mixeur: ['un', 'mixeur'], air_fryer: ['un', 'air fryer'], thermomix: ['un', 'Thermomix'], cookeo: ['un', 'Cookeo'] };
 export const equipText = k => (EQUIP_TXT[k] || ['', k])[1];
 export const equipWithArticle = k => (EQUIP_TXT[k] || ['un', k]).join(' ');
 // appareils qui manquent pour faire cette recette (four, mixeur…)

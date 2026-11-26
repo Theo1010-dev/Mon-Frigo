@@ -673,7 +673,7 @@ with sync_playwright() as p:
     @step('Équipement : recettes grisées (pas cachées), passeport = liste, « J’ai un four », Ma cuisine')
     def _():
         close_sheets(); pg.click('#meBtn'); pg.wait_for_timeout(300); open_acc('Mon équipement')
-        names = [x.inner_text() for x in pg.locator('.acc.open .pan-tile .pan-n').all()]; assert names == ['Plaques', 'Four', 'Micro-ondes', 'Mixeur', 'Air fryer', 'Thermomix'], names
+        names = [x.inner_text() for x in pg.locator('.acc.open .pan-tile .pan-n').all()]; assert names == ['Plaques', 'Four', 'Micro-ondes', 'Mixeur', 'Air fryer', 'Thermomix', 'Cookeo'], names
         pg.locator('.acc.open .pan-tile', has_text='Four').click(); pg.wait_for_timeout(300); assert 'four' not in D()['prefs']['equip'], D()['prefs']['equip']
         pg.click('#meBtn'); pg.wait_for_timeout(300); pg.get_by_role('button', name='Passeport', exact=False).click(); pg.wait_for_timeout(400)
         st = sheet().locator('.stamp', has_text='Lorraine'); n = int(st.locator('.st-c').inner_text().split()[0]); st.click(); pg.wait_for_timeout(700)
@@ -686,7 +686,7 @@ with sync_playwright() as p:
         pg.locator('.chips .chip.on', has_text='Lorraine').click(); pg.wait_for_timeout(300); assert pg.locator('.rgrid .rec').count() > n, 'filtre cuisine retiré'
         tab('stock')
         if pg.get_by_role('tab', name='🏠 Ma cuisine').count(): pg.get_by_role('tab', name='🏠 Ma cuisine').click(); pg.wait_for_timeout(400)
-        if pg.locator('.k-appl').count(): pg.locator('.k-appl').click(); pg.wait_for_timeout(400); assert sheet().locator('.pan-tile').count() == 6 and sheet().locator('.pan-tile', has_text='Air fryer').count() == 1 and sheet().locator('.pan-tile', has_text='Thermomix').count() == 1, 'fenêtre équipement'; close_sheets(); pg.get_by_role('tab', name='📋 Liste').click(); pg.wait_for_timeout(300)
+        if pg.locator('.k-appl').count(): pg.locator('.k-appl').click(); pg.wait_for_timeout(400); assert sheet().locator('.pan-tile').count() == 7 and all(sheet().locator('.pan-tile', has_text=x).count() == 1 for x in ('Air fryer', 'Thermomix', 'Cookeo')), 'fenêtre équipement'; close_sheets(); pg.get_by_role('tab', name='📋 Liste').click(); pg.wait_for_timeout(300)
 
     @step('Assistant : questions de cuisine, conversions, fautes de frappe, deux demandes d’un coup')
     def _():
