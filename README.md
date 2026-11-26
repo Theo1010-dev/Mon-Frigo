@@ -43,7 +43,7 @@ tools/
   release.py     change le numéro de version (js/state.js + package.json)
   publish.sh     construit, teste et met en ligne sur main
   data/          générateurs du catalogue : ingredients.py, recipes.py (+ audit), gen_*.py (les recettes)
-tests/         files/logic (node), e2e, migration, update, monkey, textfit (Python + Playwright)
+tests/         files/logic (node), e2e, migration, update, monkey, textfit, assistant_eval (Python + Playwright)
 ```
 
 ## Commandes
@@ -56,6 +56,7 @@ tests/         files/logic (node), e2e, migration, update, monkey, textfit (Pyth
 | `npm run data` | régénère `data/*.json` depuis `tools/data/` (audit strict) |
 | `npm run test:all` | build + tests + parcours e2e + migration + textes coupés |
 | `python3 tests/monkey.py 700 1` | 700 touchers au hasard (graine 1) |
+| `python3 tests/assistant_eval.py` | l'assistant face à ~90 phrases de tous les jours (`--all` pour lire ses réponses) |
 | `python3 tests/update.py <dossier>` | mise à jour depuis l'ancienne version (dossier plat) |
 | `python3 tools/release.py 1.13.0` | nouveau numéro de version |
 | `tools/publish.sh` | construit, teste, vérifie la mise à jour et pousse sur `main` |

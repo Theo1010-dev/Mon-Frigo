@@ -12,13 +12,51 @@ export const equipName = k => (EQUIP.find(e => e[0] === k) || [k, k])[1];
 const EQUIP_TXT = { plaques: ['des', 'plaques de cuisson'], four: ['un', 'four'], 'micro-ondes': ['un', 'micro-ondes'], mixeur: ['un', 'mixeur'], air_fryer: ['un', 'air fryer'], thermomix: ['un', 'Thermomix'], cookeo: ['un', 'Cookeo'], barbecue: ['un', 'barbecue'], raclette: ['un', 'appareil à raclette'], gaufrier: ['un', 'gaufrier'] };
 export const equipText = k => (EQUIP_TXT[k] || ['', k])[1];
 export const equipWithArticle = k => (EQUIP_TXT[k] || ['un', k]).join(' ');
-// appareils qui manquent pour faire cette recette (four, mixeur…)
 const DEFAULT_EQ = new Set(['plaques', 'four', 'micro-ondes']), EQ_SET = new WeakMap();
 const equipSet = prefs => { const l = prefs && prefs.equip; if (!l) return DEFAULT_EQ; let s = EQ_SET.get(l); if (!s) { s = new Set(l); EQ_SET.set(l, s); } return s; };
+// un appareil qu'on n'a pas peut souvent être remplacé : un burger au barbecue se fait aussi à la poêle, des frites au air fryer au four…
+// chaque remplacement est une liste d'appareils à avoir ensemble ; la recette peut préciser les siens (r.x, ex. four → air fryer si le plat tient dans le panier)
+const ALT = { air_fryer: [['four']], cookeo: [['plaques']], thermomix: [['plaques', 'mixeur']], 'micro-ondes': [['plaques'], ['four']], mixeur: [['thermomix']], barbecue: [['plaques'], ['four']], raclette: [['four']] };
+const altsOf = (r, k) => (r.x && r.x[k]) || ALT[k] || [];
+// comment faire sans l'appareil prévu, avec celui qu'on a (affiché dans la recette et le mode cuisine)
+const SWAP_TIP = {
+  'four>air_fryer': 'Sans four, au air fryer : baisse la température de 20 °C et compte environ 20 % de temps en moins, dans un plat qui tient dans le panier. Surveille la fin de cuisson.',
+  'air_fryer>four': 'Sans air fryer, au four : même température en chaleur tournante (20 °C de plus sinon), sur une plaque, en une seule couche. Compte environ 1,5 fois le temps et retourne à mi-cuisson.',
+  'cookeo>plaques': 'Sans Cookeo, dans une cocotte sur les plaques : « Dorer » = faire revenir à feu vif ; la cuisson sous pression devient une cuisson à couvert à feu doux, environ 3 fois plus longue (riz 15 à 18 min, pâtes : le temps du paquet, poulet 30 min, bœuf 2 h à 2 h 30). Ajoute un peu de liquide si ça attache.',
+  'thermomix>plaques': 'Sans Thermomix : hache au couteau, fais revenir dans une casserole, puis cuis à feu doux en remuant souvent, avec les mêmes temps.',
+  'thermomix>plaques+mixeur': 'Sans Thermomix : hache au couteau, fais revenir dans une casserole, cuis à feu doux en remuant (mêmes temps), puis passe au mixeur quand la recette dit de mixer.',
+  'thermomix>mixeur': 'Sans Thermomix : tout se fait au mixeur, en mixant 1 à 2 min jusqu’à ce que ce soit bien lisse.',
+  'micro-ondes>plaques': 'Sans micro-ondes : à la casserole, à feu doux et à couvert, en remuant (un peu plus long).',
+  'micro-ondes>four': 'Sans micro-ondes : au four à 180 °C, en comptant environ 3 fois le temps indiqué (vérifie la cuisson avec la pointe d’un couteau).',
+  'mixeur>thermomix': 'Ton Thermomix fait le mixeur : 30 s à 1 min en montant progressivement jusqu’à la vitesse 10.',
+  'barbecue>plaques': 'Sans barbecue : à la poêle-gril ou dans une poêle bien chaude, avec les mêmes temps de cuisson.',
+  'barbecue>four': 'Sans barbecue : sous le grill du four, à 10 cm de la résistance, en retournant à mi-cuisson.',
+  'raclette>four': 'Sans appareil à raclette : pose les tranches de fromage sur les pommes de terre dans un plat et fais gratiner 8 à 10 min sous le grill du four.',
+};
+// en deux mots, pour les cartes : « à la poêle », « en cocotte », « au four »
+const SWAP_SHORT = { 'four>air_fryer': 'au air fryer', 'air_fryer>four': 'au four', 'cookeo>plaques': 'en cocotte', 'thermomix>plaques': 'en casserole', 'thermomix>plaques+mixeur': 'en casserole', 'thermomix>mixeur': 'au mixeur',
+  'micro-ondes>plaques': 'en casserole', 'micro-ondes>four': 'au four', 'mixeur>thermomix': 'au Thermomix', 'barbecue>plaques': 'à la poêle', 'barbecue>four': 'au four', 'raclette>four': 'au four' };
+export const swapLabel = (r, prefs) => { const s = r.custom ? null : equipPlan(r, prefs).swaps[0]; return s ? SWAP_SHORT[s.k + '>' + s.by.join('+')] || null : null; };
+// pour une recette : les appareils vraiment manquants, et ceux qu'on remplace par ce qu'on a ({ k: 'four', by: ['air_fryer'] })
+export function equipPlan(r, prefs) {
+  const out = { missing: [], swaps: [] }; if (!r.e || !r.e.length) return out;
+  const eq = equipSet(prefs);
+  for (const k of r.e) {
+    if (!EQUIP_NEEDED[k] || eq.has(k)) continue;
+    const by = altsOf(r, k).find(set => set.every(a => eq.has(a)));
+    if (by) out.swaps.push({ k, by, tip: SWAP_TIP[k + '>' + by.join('+')] || '' }); else out.missing.push(k);
+  }
+  return out;
+}
+// appareils qui manquent pour faire cette recette, même en remplaçant (four, mixeur…)
 export function missingEquip(r, prefs) {
   if (!r.e || !r.e.length) return [];
-  const eq = equipSet(prefs);
-  return r.e.filter(e => EQUIP_NEEDED[e] && !eq.has(e));
+  return equipPlan(r, prefs).missing;
+}
+// « Il faut un Thermomix ou un mixeur » : l'appareil prévu, ou ce qui le remplacerait (seulement ce qui manque encore)
+export function lockText(r, prefs) {
+  const eq = equipSet(prefs), miss = missingEquip(r, prefs);
+  return 'Il faut ' + miss.map(k => [equipWithArticle(k), ...altsOf(r, k).map(set => set.filter(a => !eq.has(a)).map(equipWithArticle).join(' et ')).filter(Boolean)].join(' ou ')).join(', et ');
 }
 
 export class Catalogue {

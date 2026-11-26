@@ -4,17 +4,17 @@ import { h, chip, clear, haptic, openSheet, plate } from './ui.js';
 import { icon } from './icons.js';
 import { S, set, ctx, setPref } from './state.js';
 import * as A from './actions.js';
-import { score, allowed, search, inMoment, seasonal, missingEquip } from './recipes.js';
-import { clearFridge, myDishes, slotName } from './plan.js';
+import { score, allowed, search, inMoment, seasonal, missingEquip, lockText, cuisineFamily, swapLabel } from './recipes.js';
+import { clearFridge, myDishes, slotName, autoPlan } from './plan.js';
 import { expiringSoon, status, statusText, zoneLabel } from './stock.js';
-import { fmtQty } from './units.js';
+import { fmtQty, toGrams } from './units.js';
 import { todayISO, addDays, fmtDateLong, norm, plural } from './util.js';
 import { nav, resetRUI, RUI } from './nav.js';
-import { learnedSummary, forgetAll } from './habits.js';
+import { learnedSummary, forgetAll, freePattern } from './habits.js';
 import { stats as rpgStats, XP } from './rpg.js';
 import { seasonalItems } from './season.js';
 import { intent, findIngs, findWhen, findWish, leftover, shopItems, flat, dishWords, isFollowUp, findPeople, findDiet, prefWords, chatNorm, fixTypos, makeVocab, splitRequests, BRAIN_WORDS } from './brain.js';
-import { know, KNOW_WORDS } from './know.js';
+import { know, knowNear, KNOW_WORDS } from './know.js';
 import { openEquipment, withArticle } from './equipment.js';
 import { openPantry } from './pantry.js';
 import { mascotEl } from './mascot.js';
@@ -51,12 +51,12 @@ function art(id, name, partitive = false) {
   return (g === 'f' ? (partitive ? 'de la ' : 'la ') : (partitive ? 'du ' : 'le ')) + n;
 }
 const zoneTxt = z => z === 'autre' ? 'hors du frigo' : zoneLabel(z).toLowerCase();
-const covWhy = (r, sc) => { const m = r.custom ? [] : missingEquip(r, S.data.prefs); return `${r.m} min · ${m.length ? `il faut ${withArticle(m)}` : sc.cov.total && sc.cov.all ? 'tu as tout' : sc.cov.missing.length ? `il manque ${sc.cov.missing.length}` : 'à vérifier'}${sc.cov.expiringUsed.length && !m.length ? ' · anti-gaspi' : ''}`; };
+const covWhy = (r, sc) => { const m = r.custom ? [] : missingEquip(r, S.data.prefs), sw = swapLabel(r, S.data.prefs); return `${r.m} min${sw ? ' · ' + sw : ''} · ${m.length ? lockText(r, S.data.prefs).replace(/^I/, 'i') : sc.cov.total && sc.cov.all ? 'tu as tout' : sc.cov.missing.length ? `il manque ${sc.cov.missing.length}` : 'à vérifier'}${sc.cov.expiringUsed.length && !m.length ? ' · anti-gaspi' : ''}`; };
 
 // ---------- idées de recettes ----------
 function ideas(text, offset = 0) {
   const w = findWish(text), { found, excl } = findIngs(text, kb), c = ctx(), p = S.data.prefs;
-  const need = found.filter(id => !['sel', 'poivre', 'sucre', 'huile-olive', 'eau'].includes(id) || flat(text).includes(' du ' + norm(kb.name(id))));
+  const need = found.filter(id => (!['sel', 'poivre', 'sucre', 'huile-olive', 'eau'].includes(id) || flat(text).includes(' du ' + norm(kb.name(id)))) && !(w.cat === 'Salades' && id === 'salade'));
   const hasIng = (r, id) => r.i.some(([x]) => x === id || kb.subsOf(id).includes(x));
   const meal = /\b(soir|midi|diner|dejeuner|repas|plat)\b/.test(norm(text)), moment = w.moment || (need.length ? null : !meal && new Date().getHours() < 10 ? 'matin' : 'plat');
   CTX = { kind: 'ideas', text, offset };
@@ -66,6 +66,13 @@ function ideas(text, offset = 0) {
   if (w.maxTime) L = L.filter(r => r.m <= w.maxTime);
   if (w.veg) L = L.filter(r => r.veg);
   if (w.nocook) L = L.filter(r => !(r.e || []).some(e => e === 'four' || e === 'plaques' || e === 'micro-ondes'));
+  // « j'ai pas de four » : seulement ce qui se fait sans (ou avec un appareil qui le remplace)
+  if (w.without) { const eq = (p.equip || ['plaques', 'four', 'micro-ondes']).filter(e => !w.without.includes(e)); L = L.filter(r => r.custom || !missingEquip(r, { ...p, equip: eq }).length); }
+  if (w.cuisine) L = L.filter(r => w.cuisine.k ? w.cuisine.k.includes(r.k) : cuisineFamily(r) === w.cuisine.fam);
+  if (w.cat) L = L.filter(r => r.c === w.cat);
+  if (w.kids) L = L.filter(r => (r.g || []).includes('enfants'));
+  if (w.hot) L = L.filter(r => (r.e || []).length && !['Salades', 'Desserts'].includes(r.c) && !(r.g || []).includes('froid'));
+  if (w.party) L = L.filter(r => (r.g || []).some(g => g === 'fête' || g === 'week-end' || g === 'familial' || g === 'apéritif'));
   if (w.cheap) L = L.filter(r => r.costKnown && r.costPer <= 1.5);
   if (w.light) L = L.filter(r => (r.g || []).some(g => ['léger', 'équilibré', 'salade', 'soupe'].includes(g)) || ['Salades', 'Soupes', 'Poisson'].includes(r.c));
   if (need.length) L = L.filter(r => need.every(id => hasIng(r, id)));
@@ -76,7 +83,8 @@ function ideas(text, offset = 0) {
   if (w.random) sc = sc.slice(0, 30).sort(() => Math.random() - 0.5);
   const page = sc.slice(offset, offset + 4);
   const bits = [moment === 'dessert' ? 'de dessert' : moment === 'apero' ? 'pour l’apéro' : moment === 'entree' ? 'd’entrée' : moment === 'matin' ? 'pour le petit-déj ou le goûter' : null,
-    w.equip ? 'avec ' + withArticle([w.equip]) : null, w.maxTime ? `en ${w.maxTime} min max` : null, w.veg ? 'végé' : null, w.cheap ? 'pas chères' : null, w.light ? 'légères' : null, w.nocook ? 'sans cuisson' : null,
+    w.equip ? 'avec ' + withArticle([w.equip]) : null, w.without ? 'sans ' + withArticle(w.without).replace(/^(un|des) /, '') : null, w.cuisine ? CUI_TXT(w.cuisine) : null, w.cat ? `côté ${w.cat.toLowerCase()}` : null,
+    w.kids ? 'qui plaisent aux enfants' : null, w.hot ? 'bien chaudes' : null, w.party ? 'pour recevoir' : null, w.maxTime ? `en ${w.maxTime} min max` : null, w.veg ? 'végé' : null, w.cheap ? 'pas chères' : null, w.light ? 'légères' : null, w.nocook ? 'sans cuisson' : null,
     need.length ? 'avec ' + need.map(id => art(id, null, true)).join(' et ') : null, excl.length ? 'sans ' + excl.map(id => kb.name(id).toLowerCase()).join(' ni ') : null, w.have ? 'avec ce que tu as' : null].filter(Boolean);
   if (!page.length) return [P(offset ? 'Je n’ai pas d’autres idées avec ces critères.' : `Je n’ai rien trouvé${bits.length ? ' ' + bits.join(', ') : ''}. Essaie avec moins de critères.`), actions(act('Voir toutes les recettes', later(() => nav.go('recipes')), 'utensils'))];
   return [P(offset ? 'D’autres idées :' : `Voici ${plural(page.length, 'une idée', 'quelques idées')}${bits.length ? ' ' + bits.join(', ') : ''} :`), h('div', { class: 'bot-recs' }, page.map(x => recCard(x.r, covWhy(x.r, x.sc)))),
@@ -85,9 +93,19 @@ function ideas(text, offset = 0) {
       w.equip && sc.length > 4 ? act(`Voir les ${sc.length} recettes`, later(() => { resetRUI(); RUI.equip.add(w.equip); nav.go('recipes'); }), 'utensils') : act('Planifier un repas', later(() => nav.go('plan')), 'calendar'))];
 }
 
+const CUI_TXT = c => c.fam ? ({ italie: 'à l’italienne', asie: 'asiatiques', inde: 'indiennes', medit: 'méditerranéennes et orientales', france: 'bien françaises', ameriques: 'des Amériques' })[c.fam] : `de cuisine ${c.k[0].toLowerCase()}`;
+// « la recette du bœuf bourguignon », « comment faire des crêpes » : un plat précis, cherché par son nom
+function namedDish(text) {
+  const m = flat(text).match(/ (?:recette (?:de la |de l |du |des |de |d )?|comment (?:on )?(?:fait|faire|fais|prepare|preparer|reussir|cuisiner) (?:une |un |des |le |la |les |l |du |de la |de )?)(.+?) $/);
+  if (!m) return null;
+  const q = m[1].replace(/ (maison|facile|simple|svp|stp|s il te plait)$/, '').trim(), ws = q.split(' ').filter(w => w.length >= 3);
+  if (!ws.length) return null;
+  const hits = S.cat.list.filter(r => { const tn = ' ' + norm(r.t) + ' '; return ws.every(w => tn.includes(' ' + w) || tn.includes(' ' + w.replace(/s$/, ''))); });
+  return hits.length ? q : null;
+}
 function byName(q) {
   const res = search(S.cat, q).filter(r => r.custom || allowed(r, S.data.prefs, kb, true)).slice(0, 4);
-  const lock = r => { const m = r.custom ? [] : missingEquip(r, S.data.prefs); return m.length ? ` · il faut ${withArticle(m)}` : ''; };
+  const lock = r => { const m = r.custom ? [] : missingEquip(r, S.data.prefs); return m.length ? ' · ' + lockText(r, S.data.prefs).replace(/^I/, 'i') : ''; };
   return res.length ? [P('Voici ce que j’ai trouvé :'), h('div', { class: 'bot-recs' }, res.map(r => recCard(r, `${r.m} min · ${r.c.toLowerCase()}${lock(r)}`))), actions(act('Voir dans les recettes', later(() => { resetRUI(q); nav.go('recipes'); }), 'utensils'))] : null;
 }
 
@@ -151,6 +169,8 @@ const R = {
     return out;
   },
   keep(text) {
+    if (/ (maison|fait maison|faite maison|cuisine|cuisinee|cuisines|cuit|cuite|cuits|cuites|reste|restes|plat|plats|soupe|sauce|gratin|lasagnes) /.test(flat(text)) && !/ (cru|crue|crus|crues|frais|fraiche) /.test(flat(text)))
+      return [P('Un plat, une soupe ou une sauce ', B('faits maison'), ' se gardent environ ', B('3 jours au frigo'), ', dans une boîte bien fermée, refroidis en moins de 2 h.'), P('Au ', B('congélateur'), ' : environ 3 mois. Réchauffe bien à cœur, et une seule fois.')];
     const { found } = findIngs(text, kb); const k = found.length && kb.get(found[0]);
     if (!k) return [P('Dis-moi de quel produit tu parles, par exemple « combien de temps se garde le poulet ? ».')];
     const fr = k.life > 0 ? k.life : null, zone = k.zone;
@@ -164,7 +184,7 @@ const R = {
   },
   substitute(text) {
     const { found } = findIngs(text, kb); const k = found.length && kb.get(found[0]);
-    if (!k) return [P('Dis-moi quel produit tu veux remplacer, par exemple « par quoi remplacer la crème ? ».')];
+    if (!k) return R.unknown(text);
     const tip = SWAPS[k.id], ids = [...new Set([...(tip ? tip[0] : []), ...kb.subsOf(k.id)])], subs = ids.map(id => kb.get(id)).filter(Boolean), have = new Set(S.data.stock.map(x => x.ing).concat([...kb.pantry]));
     if (!subs.length && !tip) return [P(`Je n’ai pas de remplaçant sûr pour ${k.n.toLowerCase()}. Les recettes te le signalent quand un produit de la même famille fait l’affaire.`)];
     return [P('À la place de ', B(k.n.toLowerCase()), ', tu peux prendre :'), subs.length ? list(subs.map(s => [s.emoji + ' ' + s.n, have.has(s.id) ? h('span', { class: 'tag ok sm-tag' }, 'tu en as') : null])) : null, tip && tip[1] ? P('💡 ', tip[1]) : null].filter(Boolean);
@@ -181,8 +201,13 @@ const R = {
       const byName = st.filter(x => words.some(w => norm(x.name).includes(w)));
       if (byName.length) return [list(byName.slice(0, 6).map(x => [B(x.name), ` : ${fmtQty(x.qty, x.unit)}, ${zoneTxt(x.zone)}${x.expiry ? ', ' + statusText(x, t).toLowerCase() : ''}`]))];
       if (!st.length) return [P('Ton stock est vide pour l’instant.'), actions(act('Ajout rapide', later(openQuickAdd), 'wand'))];
-      const zones = ['frigo', 'congelateur', 'placard'].map(z => [z, st.filter(x => x.zone === z).length]).filter(x => x[1]);
-      return [P('Tu as ', B(st.length + ' ' + plural(st.length, 'produit', 'produits')), ` : ${zones.map(([z, n]) => `${n} au ${zoneLabel(z).toLowerCase()}`).join(', ')}.`), actions(act('Ouvrir « Ma cuisine »', later(() => { setPref({ stockView: 'kitchen' }); nav.go('stock'); }), 'fridge'))];
+      // « qu'est-ce que j'ai au congélateur » : seulement cette zone
+      const tt = flat(text), only = / (congelateur|congel|congelo|freezer) /.test(tt) ? 'congelateur' : / (placard|placards) /.test(tt) ? 'placard' : / (frigo|refrigerateur|frigidaire) /.test(tt) && !/ (hors du frigo) /.test(tt) ? 'frigo' : null;
+      if (only && !st.some(x => x.zone === only)) return [P(`Rien ${only === 'congelateur' ? 'au congélateur' : only === 'placard' ? 'au placard' : 'au frigo'} pour l’instant.`), actions(act('Ajout rapide', later(openQuickAdd), 'wand'))];
+      const zones = ['frigo', 'congelateur', 'placard', 'autre'].filter(z => !only || z === only).map(z => [z, st.filter(x => x.zone === z)]).filter(x => x[1].length);
+      const names = l => { const n = [...new Set(l.map(x => x.name))]; return n.slice(0, 8).join(', ').toLowerCase() + (n.length > 8 ? ` et ${n.length - 8} autres` : ''); };
+      const n = zones.reduce((a, z) => a + z[1].length, 0);
+      return [P('Tu as ', B(n + ' ' + plural(n, 'produit', 'produits')), only ? ` ${only === 'congelateur' ? 'au congélateur' : only === 'placard' ? 'au placard' : 'au frigo'} :` : ' :'), list(zones.map(([z, l]) => [B(`${z === 'autre' ? 'Hors du frigo' : zoneLabel(z)} (${l.length})`), ' : ' + names(l)])), actions(act('Ouvrir « Ma cuisine »', later(() => { setPref({ stockView: 'kitchen' }); nav.go('stock'); }), 'fridge'))];
     }
     const out = [];
     for (const id of found.slice(0, 4)) {
@@ -194,8 +219,14 @@ const R = {
     }
     return out;
   },
-  shop() {
+  shop(text = '') {
     const l = S.data.shop.filter(x => !x.done);
+    if (l.length && / (combien|cout|coute|couter|coutent|prix|budget|cher|euros?) /.test(flat(text))) {
+      // sans quantité notée, on compte ce qu'on achète d'habitude (une bouteille de lait, un paquet de pâtes…)
+      const price = x => { if (x.price > 0) return x.price; const id = x.ing || kb.resolve(x.name), k = id && kb.get(id); if (!k || !k.price) return null; const [q, u] = x.qty ? [x.qty, x.unit] : k.buy ? k.buy : [k.q2, k.u]; const g = toGrams(k, q, u); return g == null ? null : g / 1000 * k.price; };
+      const known = l.map(price).filter(v => v != null), est = known.reduce((a, b) => a + b, 0), b = S.data.prefs.budget;
+      if (known.length) return [P('Tes courses devraient coûter environ ', B(`${Math.round(est)} €`), known.length < l.length ? ` (estimé sur ${known.length} articles sur ${l.length})` : '', '.'), b ? P(est > b ? `C’est au-dessus de ton budget de ${b} € par semaine.` : `Ça rentre dans ton budget de ${b} € par semaine 👍`) : null, actions(act('Ouvrir mes courses', later(() => nav.go('shop')), 'cart'))];
+    }
     if (!l.length) return [P('Ta liste de courses est vide.'), actions(act('Préparer depuis ma semaine', later(() => nav.go('plan')), 'calendar'))];
     return [P('Il te reste ', B(l.length + ' ' + plural(l.length, 'article', 'articles')), ' à acheter :'), list(l.slice(0, 10).map(x => x.qty ? `${x.name} (${fmtQty(x.qty, x.unit)})` : x.name)), l.length > 10 ? P(`… et ${l.length - 10} autres.`) : null, actions(act('Ouvrir mes courses', later(() => nav.go('shop')), 'cart'))].filter(Boolean);
   },
@@ -224,7 +255,28 @@ const R = {
       out.push(list([['lunch', 'Midi'], ['dinner', 'Soir']].filter(([k]) => !w.slot || k === w.slot).map(([k, l]) => { const x = e[k], r = x && x.rid && S.cat.get(x.rid);
         return x ? `${l} : ${r ? r.t : x.note}${x.done ? ' ✓' : ''}` : [`${l} : rien de prévu `, h('button', { type: 'button', class: 'linkish', onclick: later(() => openQuickMeal(d, k)) }, 'ajouter')]; })));
     }
+    const empty = days.some(d => !(S.data.plan[d] && (w.slot ? S.data.plan[d][w.slot] : S.data.plan[d].lunch && S.data.plan[d].dinner)));
+    if (empty) out.push(actions(act(days.length === 1 && days[0] !== t ? 'Une idée pour ce jour-là' : 'Une idée de repas', () => { push('me', [P('Une idée de repas')]); reply(ideas('une idée de repas')); }, 'dice'), act('Remplir ma semaine', () => { push('me', [P('Remplis ma semaine')]); reply(R.weekAuto()); }, 'wand')));
     return out;
+  },
+  // « planifie ma semaine » : les cases vides des 7 prochains jours, avec les meilleures idées pour ton stock (annulable)
+  weekAuto() {
+    const t = todayISO(), days = Array.from({ length: 7 }, (_, i) => addDays(t, i)), before = JSON.parse(JSON.stringify(S.data.plan));
+    const res = autoPlan(S.data.plan, days, ctx(), S.cat, { free: freePattern() });
+    // le midi d'aujourd'hui est passé : on ne le remplit pas après coup
+    if (A.currentMealSlot() === 'dinner' && res.plan[t] && res.plan[t].lunch && !(before[t] && before[t].lunch)) { const d0 = { ...res.plan[t] }; delete d0.lunch; res.plan = { ...res.plan, [t]: d0 }; res.added--; }
+    if (!res.added) return [P('Ta semaine est déjà bien remplie 👍'), actions(act('Voir ma semaine', later(() => nav.go('plan')), 'calendar'))];
+    set('plan', res.plan); haptic(10);
+    const lines = []; for (const d of days) for (const k of ['lunch', 'dinner']) { const e = res.plan[d] && res.plan[d][k], b0 = before[d] && before[d][k]; if (e && e.rid && !b0) { const r = S.cat.get(e.rid); if (r) lines.push([B(`${d === t ? 'Aujourd’hui' : fmtDateLong(d)} ${k === 'lunch' ? 'midi' : 'soir'}`), ' : ' + r.t]); } }
+    return [P(`J’ai prévu ${res.added} repas dans les cases vides, en partant de ton stock 📅`), list(lines.slice(0, 8)), lines.length > 8 ? P(`… et ${lines.length - 8} autres.`) : null,
+      actions(act('Annuler', () => { set('plan', before); reply([P('Annulé : ta semaine est revenue comme avant.')]); }, 'undo'), act('Voir ma semaine', later(() => nav.go('plan')), 'calendar'), act('Faire la liste de courses', () => { const g = A.generateShoppingFromPlan(); reply([P(g.generated ? `${g.generated} produit${g.generated > 1 ? 's' : ''} ajouté${g.generated > 1 ? 's' : ''} à ta liste de courses 🛒` : 'Tu as déjà tout ce qu’il faut 👍')]); }, 'cart'))];
+  },
+  clock() {
+    const d = new Date(), hh = `${d.getHours()}h${String(d.getMinutes()).padStart(2, '0')}`;
+    return [P(`Il est ${hh}, on est ${fmtDateLong(todayISO()).toLowerCase()} ${d.getFullYear()} ${['❄️', '❄️', '🌱', '🌱', '🌱', '☀️', '☀️', '☀️', '🍂', '🍂', '🍂', '❄️'][d.getMonth()]}`)];
+  },
+  offtopic() {
+    return [P('Ça, je ne peux pas le savoir : je fonctionne sans internet, directement sur ton téléphone 📵 Par contre, pour la cuisine, ton frigo et tes repas, je suis là !'), starters(['On mange quoi ce soir ?', 'Qu’est-ce que j’ai dans le frigo ?'])];
   },
   season() {
     const mo = new Date().getMonth() + 1, items = seasonalItems(mo).slice(0, 12), c = ctx(), p = S.data.prefs;
@@ -285,18 +337,24 @@ const R = {
         act(`Ajouter aux courses`, () => { names.forEach(n => A.addShop({ name: n })); reply([P('C’est sur ta liste de courses 🛒')]); }, 'cart'))];
   },
   ideas(text) {
+    const nd = namedDish(text); if (nd) { const res = byName(nd); if (res) return res; }
     // un plat précis (« une recette de crêpes ») : on cherche d'abord dans le catalogue
     const words = dishWords(text), { found, excl } = findIngs(text, kb);
     if (words.length && !found.length && !excl.length && !Object.keys(findWish(text)).length) { const res = byName(words.join(' ')); if (res) return res; }
     return ideas(text);
   },
   unknown(text) {
+    const nd = namedDish(text); if (nd) { const res = byName(nd); if (res) return res; }
     const { found, excl } = findIngs(text, kb), w = findWish(text);
     // juste un produit (« les courgettes ? ») : tout ce que je sais dessus
     if (found.length === 1 && !excl.length && !Object.keys(w).length && dishWords(text).length <= 1) return aboutIng(found[0]);
     const exact = byName(text); if (exact) return exact;
     if (found.length || excl.length || Object.keys(w).length) return ideas(text);
     const res = dishWords(text).length ? byName(dishWords(text).join(' ')) : null; if (res) return res;
+    // une fiche qui parle du même sujet, même si la question est tournée autrement
+    const near = knowNear(text); if (near) return [P('Je pense que tu parles de ça :'), ...knowView(near)];
+    // une vraie question hors de la cuisine (« la capitale du Japon ») : on le dit simplement
+    if (/\?/.test(text) || /^ (qui|quel|quelle|quels|quelles|combien|ou|quand|pourquoi|c est qui|est ce que|tu sais) /.test(flat(text))) return R.offtopic();
     return [P('Je ne suis pas sûr de comprendre 🤔 Je connais bien la cuisine, tes recettes et ton frigo, mais pas tout le reste : je fonctionne sans internet.'), P('Essaie par exemple :'), starters(['Combien de temps cuire le riz ?', '180 °C, c’est quel thermostat ?', 'Que faire avec des restes de pain ?', 'On mange quoi ce soir ?'])];
   },
 };
@@ -331,6 +389,8 @@ function useKnow(k, kn, text) {
   if (kn.small) return k === 'unknown';
   if (ACTIONS.has(k)) return false;
   if (k === 'unknown' || k === 'help') return !kn.app || how || k === 'unknown';
+  if (k === 'keep' && !kn.keep && / (garde|gardent|conserve|conservent|conserver|tient|tiennent|congel\w*) /.test(flat(text))) return false;   // « le poulet se garde combien de temps » : la conservation, pas la cuisson
+  if (k === 'stock' || k === 'weekAuto' || k === 'clock' || k === 'offtopic') return false;
   return kn.score >= 20 && !kn.app;   // idées, conservation, remplacement : seulement une fiche bien précise
 }
 // vocabulaire du correcteur : mots des intentions, des fiches, des produits et des recettes

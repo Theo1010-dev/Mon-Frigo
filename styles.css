@@ -220,6 +220,8 @@ button.item:active, .mini-slot:active, .rec:active, .slot:active, .qp-row:active
 .cov.lock { color: var(--ink-2); } .cov.lock .ic { flex: none; }
 .lock-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 14px; border-radius: 14px; background: var(--sunk); color: var(--ink-2); font-weight: 650; font-size: 14px; }
 .lock-note .grow { min-width: 160px; }
+/* comment faire avec un autre appareil : une simple ligne, sans encadré */
+.swap-note { display: flex; gap: 8px; align-items: flex-start; margin: 0; color: var(--ink-2); font-size: 14px; line-height: 1.45; } .swap-note svg { flex: none; margin-top: 2px; color: var(--accent-deep); }
 .heart { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-3); }
 .heart.on { color: var(--accent); }
 .count-line { color: var(--ink-2); font-size: 14px; margin: -8px 2px -6px; }

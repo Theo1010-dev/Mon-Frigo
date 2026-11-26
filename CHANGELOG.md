@@ -1,5 +1,18 @@
 # Historique des versions de Mon Frigo
 
+## 1.16.0
+- **Un appareil se remplace souvent** : un burger au barbecue se fait aussi à la poêle, des frites au air fryer au four, un plat au Cookeo en cocotte, une recette au Thermomix à la casserole, une raclette sous le grill du four… Ces recettes ne sont plus grisées si un de tes appareils fait l'affaire. La carte l'indique (« à la poêle », « en cocotte »), et la fiche comme le mode cuisine expliquent comment faire (température, temps).
+- Le four peut être remplacé par l'air fryer pour 160 plats qui tiennent dans le panier (pas les tartes, pizzas, gâteaux en moule ni les rôtis).
+- Quand rien ne remplace l'appareil, la recette le dit clairement : « Il faut un Thermomix ou un mixeur », « Il faut un four ou un air fryer ».
+- **Assistant bien plus malin** (toujours dans l'appli, sans internet) :
+  - il comprend les cuisines (« un plat italien », « japonais »), les types de plat (« une soupe », « une salade composée »), « pour les enfants », « on reçoit des amis », « j'ai pas de four », « envie de chaud », « j'ai la flemme » ;
+  - « la recette du bœuf bourguignon », « comment on fait des crêpes » : il trouve le plat ;
+  - « qu'est-ce que j'ai au congélateur » : la liste de ce que tu as, zone par zone ; « j'ai combien de lait » ;
+  - « planifie ma semaine » : il remplit les cases vides avec les meilleures idées pour ton stock (annulable), et peut faire la liste de courses ;
+  - « combien vont coûter mes courses », « quelle heure il est » ;
+  - un petit lexique de cuisine (bain-marie, déglacer, julienne, roux…), les dépannages (sauce trop liquide, chantilly qui ne monte pas, gâteau pas cuit, chocolat qui graine…) et comment faire sans un appareil ;
+  - quand il ne comprend pas tout à fait, il propose la fiche la plus proche au lieu de « pas compris ».
+
 ## 1.15.0
 - **3 nouveaux appareils** dans « Mon équipement » : barbecue (ou plancha), appareil à raclette et gaufrier. Comme les autres, leurs recettes sont grisées tant que tu ne les as pas cochés. Les gaufres demandent désormais un gaufrier.
 - **Filtre « Appareil »** dans Recettes → Filtres : voir les recettes d'un appareil précis (Cookeo, air fryer, barbecue…), ou « Sans cuisson », et « Seulement avec mon équipement » pour cacher les grisées. L'appareil choisi s'affiche en puce qu'on retire d'un geste.

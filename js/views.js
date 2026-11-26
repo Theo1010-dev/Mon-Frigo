@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 import { S, set, setPref, mutate, ctx, exportAll, resetAll, VERSION } from './state.js';
 import * as A from './actions.js';
 import { ZONES, status, statusText, expiringSoon, sortStock } from './stock.js';
-import { score, allowed, search, seasonal, MOMENTS, inMoment, cuisineFamily, missingEquip, equipName, EQUIP_EMOJI } from './recipes.js';
+import { score, allowed, search, seasonal, MOMENTS, inMoment, cuisineFamily, missingEquip, equipName, EQUIP_EMOJI, lockText, swapLabel } from './recipes.js';
 import { SLOTS, clearFridge, dishEmoji } from './plan.js';
 import { fmtQty, toGrams } from './units.js';
 import { todayISO, fmtDateLong, fmtDateShort, money, daysBetween, norm } from './util.js';
@@ -211,14 +211,14 @@ function computeRecipes() {
 function recCard({ r, sc, lock }) {
   const cov = sc.cov, fav = S.data.fav.includes(r.id);
   let covEl = null;
-  if (lock && lock.length) covEl = h('div', { class: 'cov lock' }, icon('lock', 13), `Il faut ${withArticle(lock)}`);
+  if (lock && lock.length) covEl = h('div', { class: 'cov lock' }, icon('lock', 13), lockText(r, S.data.prefs));
   else if (cov.expiringUsed.length && !cov.all) covEl = h('div', { class: 'cov anti' }, h('span', { class: 'dot' }), 'Anti-gaspi');
   else if (cov.total && cov.all) covEl = h('div', { class: 'cov good' }, h('span', { class: 'dot' }), cov.subs ? `Tout est là (${cov.subs} remplacé${cov.subs > 1 ? 's' : ''})` : 'Tout est là');
   else if (cov.total && cov.ok > 0) covEl = h('div', { class: 'cov ' + (cov.missing.length <= 2 ? 'mid' : '') }, h('span', { class: 'dot' }), cov.missing.length === 1 ? `Il manque ${kb.name(cov.missing[0].id, '').toLowerCase()}` : `Il manque ${cov.missing.length} ingrédients`);
   const heart = h('button', { type: 'button', class: 'heart' + (fav ? ' on' : ''), 'aria-label': fav ? 'Retirer des favoris' : 'Ajouter aux favoris', 'aria-pressed': String(fav), onclick: e => { e.stopPropagation(); A.toggleFav(r.id); haptic(8); } }, icon('heart', 20));
   if (fav) heart.querySelector('svg').setAttribute('fill', 'currentColor');
   return h('div', { class: 'rec' + (lock && lock.length ? ' locked' : ''), role: 'button', tabindex: '0', onclick: () => openRecipe(r.id), onkeydown: e => { if (e.key === 'Enter') openRecipe(r.id); } }, plate(r, kb, 'lg'), heart,
-    h('div', { class: 'strong clamp3' }, r.t), meta([['clock', `${r.m} min`], r.custom ? ['edit', 'Perso'] : null]), covEl);
+    h('div', { class: 'strong clamp3' }, r.t), meta([['clock', `${r.m} min`], r.custom ? ['edit', 'Perso'] : null, !lock || !lock.length ? (sw => sw ? ['swap', sw] : null)(swapLabel(r, S.data.prefs)) : null]), covEl);
 }
 export function viewRecipes() {
   const el = h('div', { class: 'view' }), list = h('div', { class: 'rgrid' }), countEl = h('p', { class: 'count-line' });

@@ -3,7 +3,7 @@ import * as A from './actions.js';
 import { h, btn, openSheet, confirmSheet, toast, stepper, seg, chip, field, plate, meta, tint, clear, haptic } from './ui.js';
 import { icon } from './icons.js';
 import { S, mutate, set, ensureIng, rebuildCatalogue } from './state.js';
-import { coverage, scaleIngredients, CUISINES, missingEquip, EQUIP, EQUIP_EMOJI, equipName } from './recipes.js';
+import { coverage, scaleIngredients, CUISINES, missingEquip, EQUIP, EQUIP_EMOJI, equipName, equipPlan, lockText } from './recipes.js';
 import { withArticle, addEquip } from './equipment.js';
 import { fmtQty, UNITS_UI, canonUnit } from './units.js';
 import { todayISO, addDays, dayName, fmtDateShort, money, uid } from './util.js';
@@ -14,6 +14,8 @@ import { tx, celebrate } from './theme.js';
 const appliances = r => { const l = EQUIP.filter(([k]) => (r.e || []).includes(k)).map(([k]) => equipName(k)); return l.length ? l.map((x, i) => i ? x.toLowerCase().replace('cookeo', 'Cookeo').replace('thermomix', 'Thermomix') : x).join(', ') : 'Sans cuisson'; };
 
 const kb = S.kb;
+// en mode cuisine, le conseil de remplacement s'affiche à l'étape qui utilise l'appareil
+const STEP_KEY = { four: /four|°C/i, air_fryer: /air fryer|panier/i, cookeo: /dorer|pression|cookeo|cuve/i, thermomix: /vitesse|\bbol\b|thermomix/i, 'micro-ondes': /micro-ondes/i, mixeur: /mix/i, barbecue: /braises|barbecue|grille|plancha|grill/i, raclette: /raclette|poêlon/i };
 
 const ingName = id => kb.name(id, id);
 
@@ -55,9 +57,11 @@ export function openRecipe(rid, opts = {}) {
   const steps = h('ol', { class: 'steps' }, r.p.map(t => h('li', null, t)));
   // recette grisée faute d'appareil : on le dit, et on peut corriger d'un geste
   const lockKeys = r.custom ? [] : missingEquip(r, S.data.prefs);
-  const lockEl = lockKeys.length ? h('div', { class: 'lock-note' }, icon('lock', 18), h('span', { class: 'grow' }, `Il faut ${withArticle(lockKeys)} pour cette recette.`),
+  const lockEl = lockKeys.length ? h('div', { class: 'lock-note' }, icon('lock', 18), h('span', { class: 'grow' }, `${lockText(r, S.data.prefs)} pour cette recette.`),
     btn(`J’ai ${withArticle(lockKeys)}`, { class: 'btn soft sm', onclick: () => { addEquip(lockKeys); lockEl.remove(); } })) : null;
-  const body = h('div', { class: 'recipe' }, top, h('div', { class: 'r-body' }, lockEl, servRow, actions, h('h2', null, 'Ingrédients'), ingBox, h('h2', null, 'Préparation'), steps,
+  // appareil remplacé par un que tu as (frites au four, burger à la poêle…) : comment faire, en une ligne
+  const swapEls = r.custom ? [] : equipPlan(r, S.data.prefs).swaps.filter(x => x.tip).map(x => h('p', { class: 'swap-note' }, icon('swap', 16), h('span', null, x.tip)));
+  const body = h('div', { class: 'recipe' }, top, h('div', { class: 'r-body' }, lockEl, ...swapEls, servRow, actions, h('h2', null, 'Ingrédients'), ingBox, h('h2', null, 'Préparation'), steps,
     btn('Déjà cuisiné ? Retirer les ingrédients du stock', { class: 'btn link wrap', onclick: () => { s.close(); setTimeout(() => openFinishCook(rid, serv, { title: 'Repas cuisiné' }), 260); } })));
   const s = openSheet({ title: r.t, size: 'full r-sheet', content: body, footer: btn('Cuisiner', { class: 'btn primary block big', onclick: () => { s.close(); setTimeout(() => openCook(rid, serv), 260); } }, 'flame') });
   s.body.addEventListener('scroll', () => s.el.classList.toggle('scrolled', s.body.scrollTop > 170), { passive: true });
@@ -85,6 +89,7 @@ const fmtClock = sec => { sec = Math.max(0, Math.ceil(sec)); const m = Math.floo
 
 export function openCook(rid, serv, { resume } = {}) {
   const r = S.cat.get(rid); if (!r) return;
+  const swaps = r.custom ? [] : equipPlan(r, S.data.prefs).swaps;
   let c = S.data.cook && S.data.cook.rid === rid ? S.data.cook : null;
   if (!resume || !c) c = { rid, serv, step: 0, timers: [], started: Date.now() };
   serv = c.serv; set('cook', c);
@@ -97,6 +102,7 @@ export function openCook(rid, serv, { resume } = {}) {
     clear(stepBox); const total = r.p.length, txt = r.p[c.step];
     clear(prog); for (let i = 0; i < total; i++) prog.append(h('i', { class: i <= c.step ? 'on' : '' })); prog.setAttribute('aria-label', `Étape ${c.step + 1} sur ${total}`); prog.setAttribute('aria-valuenow', String(c.step + 1)); prog.setAttribute('aria-valuemax', String(total));
     stepBox.append(h('div', { class: 'step-num' }, `Étape ${c.step + 1} sur ${total}`), h('p', { class: 'step-text' }, txt));
+    for (const x of swaps) if (x.tip && STEP_KEY[x.k] && STEP_KEY[x.k].test(txt)) stepBox.append(h('p', { class: 'swap-note' }, icon('swap', 16), h('span', null, x.tip)));
     const det = detectTimers(txt); if (det.length) stepBox.append(h('div', { class: 'chips wrap' }, det.map(d => btn(`Minuteur ${d.label}`, { class: 'chip timer', onclick: () => addTimer(d.sec, d.label) }, 'timer'))));
     prevBtn.disabled = c.step === 0; clear(nextBtn); nextBtn.append(c.step === total - 1 ? 'Terminer 🎉' : 'Étape suivante');
   }

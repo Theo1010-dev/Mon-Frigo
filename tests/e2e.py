@@ -196,10 +196,11 @@ with sync_playwright() as p:
         tab('recipes'); pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400)
         sheet().locator('.chip', has_text='Cookeo').click(); sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(500)
         titles = [e.inner_text() for e in pg.locator('.rec .strong').all()]; assert len(titles) >= 10 and all('Cookeo' in t for t in titles), titles
-        assert pg.locator('.rgrid .rec.locked').count() == len(titles), 'Cookeo pas coché : grisées'
-        pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400); sheet().locator('.chip', has_text='Seulement avec mon équipement').click(); sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(500)
-        assert pg.locator('.rgrid .rec').count() == 0, 'grisées cachées'
-        pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400); sheet().get_by_role('button', name='Effacer').click(); pg.wait_for_timeout(200); assert sheet().locator('.chip.on', has_text='Cookeo').count() == 0; sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(400)
+        assert pg.locator('.rgrid .rec.locked').count() == 0, 'sans Cookeo, faisables en cocotte : pas grisées'
+        pg.locator('.rgrid .rec').first.click(); pg.wait_for_timeout(500); assert 'Sans Cookeo' in sheet().locator('.swap-note').first.inner_text(), 'conseil cocotte'; close_sheets()
+        pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400); sheet().locator('.chip.on', has_text='Cookeo').click(); sheet().locator('.chip', has_text='Gaufrier').click(); sheet().locator('.chip', has_text='Seulement avec mon équipement').click(); sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(500)
+        assert pg.locator('.rgrid .rec').count() == 0, 'gaufrier : grisées cachées'
+        pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400); sheet().get_by_role('button', name='Effacer').click(); pg.wait_for_timeout(200); assert sheet().locator('.chip.on', has_text='Gaufrier').count() == 0; sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(400)
         pg.locator('.chip', has_text='Filtres').click(); pg.wait_for_timeout(400); sheet().locator('.chip', has_text='Sans cuisson').click(); sheet().get_by_role('button', name='Voir les recettes').click(); pg.wait_for_timeout(500)
         nocook = pg.evaluate('''() => { const S = window.__monFrigo.S; return [...document.querySelectorAll('.rec .strong')].slice(0, 30).every(e => { const r = S.cat.list.find(x => x.t === e.textContent); return r && !(r.e || []).length; }); }''')
         assert nocook and pg.locator('.rgrid .rec').count() > 0, 'sans cuisson'

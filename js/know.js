@@ -29,17 +29,17 @@ const KNOW = [
     a: ['À la vapeur (ou à l’eau bouillante salée) :', '• Épinards : 2 à 3 min · Courgettes en rondelles : 5 min · Brocoli en fleurettes : 5 à 7 min', '• Haricots verts : 8 à 10 min · Carottes en rondelles : 12 à 15 min', 'Rôtis au four, c’est encore meilleur : 200 °C, un filet d’huile, sel, 20 à 35 min selon le légume.'] },
   { g: ['four', 'prechauffer|prechauffe|chaleur tournante|tournante|chaleur|grill'],
     a: ['**Préchauffe** le four 10 à 15 min avant d’enfourner : les gâteaux montent mieux et les temps des recettes sont justes.', 'En **chaleur tournante**, baisse de 10 à 20 °C par rapport à une recette en chaleur classique (ou garde la température et surveille). Le **grill** sert à gratiner les 3 à 5 dernières minutes.'] },
-  { g: ['air fryer|airfryer|friteuse sans huile', 'temps|combien|temperature|degres|cuire|cuisson|comment|marche|utiliser|astuce|astuces|conseil|conseils'], x: ['recette', 'idee', 'idees', 'regler', 'cocher'],
+  { g: ['air fryer|airfryer|friteuse sans huile', 'temps|combien|temperature|degres|cuire|cuisson|comment|marche|utiliser|astuce|astuces|conseil|conseils'], x: ['recette', 'idee', 'idees', 'regler', 'cocher', 'sans', 'pas de'],
     a: ['Les repères au **air fryer** (préchauffé 3 min) :', '• Frites maison : 200 °C, 18 à 22 min · Frites surgelées : 200 °C, 12 à 15 min', '• Lanières de poulet panées : 200 °C, 10 à 12 min · Cuisses de poulet : 190 °C, 22 à 25 min', '• Pavé de saumon : 200 °C, 8 à 10 min · Légumes en morceaux : 190 °C, 12 à 15 min', 'Ne surcharge pas le panier et secoue-le à mi-cuisson : c’est ce qui rend tout croustillant. En général : 20 °C de moins et 20 % de temps en moins qu’au four.'], act: ['Une recette au air fryer', 'ask:une recette au air fryer'] },
-  { g: ['cookeo|multicuiseur|autocuiseur|cocotte minute', 'comment|adapter|utiliser|astuce|astuces|conseil|conseils|temps|combien|pression|marche'], x: ['recette', 'idee', 'idees', 'regler', 'cocher'],
+  { g: ['cookeo|multicuiseur|autocuiseur|cocotte minute', 'comment|adapter|utiliser|astuce|astuces|conseil|conseils|temps|combien|pression|marche'], x: ['idee', 'idees', 'regler', 'cocher', 'sans', 'pas de'],
     a: ['Les bases au **Cookeo** :', '• **Dorer** : fais revenir oignons et viande couvercle ouvert, 3 à 5 min', '• **Cuisson sous pression** : ferme, le temps démarre quand la pression est atteinte', '• Repères sous pression : riz 8 min · pâtes 4 à 5 min · poulet en morceaux 10 à 12 min · bœuf à mijoter 30 à 40 min · lentilles corail 6 min · soupe de légumes 10 min', 'Toujours un peu de liquide (au moins 20 cl), et ne dépasse pas le trait maximum de la cuve.'], act: ['Une recette au Cookeo', 'ask:une recette au Cookeo'] },
-  { g: ['barbecue|barbec|bbq|plancha|grillade|grillades', 'comment|temps|combien|cuire|cuisson|astuce|astuces|conseil|conseils|braises|allumer|marche'], x: ['recette', 'idee', 'idees', 'regler', 'cocher'],
+  { g: ['barbecue|barbec|bbq|plancha|grillade|grillades', 'comment|temps|combien|cuire|cuisson|astuce|astuces|conseil|conseils|braises|allumer|marche'], x: ['recette', 'idee', 'idees', 'regler', 'cocher', 'sans', 'pas de'],
     a: ['Les repères au **barbecue** (ou à la plancha) :', '• Attends des braises rouges couvertes de cendre blanche, sans flammes', '• Merguez et saucisses : 10 à 12 min en les tournant · Brochettes : 8 à 10 min', '• Côtelettes d’agneau : 3 à 4 min par face · Pilons de poulet : 25 à 30 min, sur le bord', '• Sardines ou poisson entier : 4 à 5 min par face · Épis de maïs : 15 min', 'Sors la viande du frigo 20 min avant, et sale après la cuisson.'], act: ['Une recette au barbecue', 'ask:une recette au barbecue'] },
   { g: ['raclette', 'comment|combien|quantite|quantites|par personne|astuce|astuces|conseil|conseils|prevoir|faut il'], x: ['recette', 'idee', 'idees', 'regler', 'cocher'],
     a: ['Pour une **raclette** réussie :', '• Fromage : 200 g par personne (250 g pour les gros appétits)', '• Pommes de terre : 300 g par personne, cuites à l’eau en robe des champs 20 à 25 min', '• Charcuterie : 100 à 150 g par personne (jambon cru, rosette, coppa…)', '• Avec des cornichons, des petits oignons et une salade verte'], act: ['Une idée de raclette', 'ask:une raclette ce soir'] },
   { g: ['gaufre|gaufres|gaufrier', 'comment|temps|combien|cuire|cuisson|astuce|astuces|conseil|conseils|colle|croustillante|croustillantes|marche'], x: ['recette', 'idee', 'idees', 'regler', 'cocher'],
     a: ['Des **gaufres** réussies :', '• Préchauffe bien le gaufrier (le voyant s’éteint) et graisse-le au premier tour', '• Une petite louche par gaufre, sans remplir jusqu’au bord', '• 3 à 4 min de cuisson, sans ouvrir avant la fin', '• Pour des gaufres croustillantes : laisse reposer la pâte 30 min et ajoute un peu de bière ou d’eau gazeuse'], act: ['Une recette au gaufrier', 'ask:une recette au gaufrier'] },
-  { g: ['thermomix|robot cuiseur', 'comment|adapter|utiliser|astuce|astuces|conseil|conseils|vitesse|marche'], x: ['recette', 'idee', 'idees', 'regler', 'cocher'],
+  { g: ['thermomix|robot cuiseur', 'comment|adapter|utiliser|astuce|astuces|conseil|conseils|vitesse|marche'], x: ['idee', 'idees', 'regler', 'cocher', 'sans', 'pas de'],
     a: ['Les gestes de base au **Thermomix** :', '• Hacher un oignon : 5 s / vitesse 5 · Rissoler : 3 min / 120 °C / vitesse 1', '• Mijoter sans abîmer les morceaux : **sens inverse**, vitesse 1', '• Soupe veloutée : 1 min en montant progressivement de la vitesse 5 à 10', '• Râper du parmesan : 10 s / vitesse 10', 'Pour adapter une recette : hache et rissole d’abord, ajoute les liquides, puis cuis à 100 °C en sens inverse.'], act: ['Une recette au Thermomix', 'ask:une recette au Thermomix'] },
   { g: ['cuit|cuite|cuits|prete|pret', 'savoir|comment|verifier|test'],
     a: ['Quelques tests simples :', '• **Gâteau** : une lame plantée au centre ressort sèche.', '• **Viande ou volaille** : le jus qui sort est clair (pas rosé) pour la volaille et le porc.', '• **Poisson** : la chair est opaque et se détache en lamelles.', '• **Légumes, pommes de terre** : la pointe d’un couteau entre sans forcer.'] },
@@ -121,11 +121,11 @@ const KNOW = [
     a: ['Onglet **Courses** : la liste est rangée par rayon, tu coches en faisant tes courses, puis **« Ranger »** met tout dans ton stock avec les dates. Le bouton partager l’envoie par message.', 'Depuis ta semaine, « Faire les courses » ajoute tout ce qui manque.'], act: ['Ouvrir mes courses', 'tab:shop'] },
   { g: ['planifier|planning|semaine|programmer', 'comment|marche|faire|ajouter|repas'], app: true,
     a: ['Onglet **Semaine** : touche un jour, puis **+** sur le midi ou le soir, et tape n’importe quel plat. Les **…** d’un repas permettent de le déplacer, le remplacer ou dire que tu l’as cuisiné.', 'Ou dis-le moi : « mets des lasagnes demain soir ».'], act: ['Ouvrir ma semaine', 'tab:plan'] },
-  { g: ['equipement|appareil|appareils|four|mixeur|micro ondes|micro onde|plaques|air fryer|airfryer|thermomix|cookeo|barbecue|gaufrier', 'ou|regler|changer|ajouter|j ai|grisee|grisees|cocher|mon'], app: true, x: ['cuire', 'cuisson', 'temps', 'prechauffer', 'tournante', 'recette', 'idee'],
-    a: ['Ton équipement se règle dans **Moi → Mon équipement**, ou en touchant « Appareils » sur le plan de travail de « Ma cuisine » (onglet Stock) : plaques, four, micro-ondes, mixeur, air fryer, Thermomix, Cookeo, barbecue, appareil à raclette et gaufrier.', 'Les recettes qui demandent un appareil que tu n’as pas restent visibles, **grisées**, avec « Il faut un four ». Dans Recettes → Filtres → « Appareil », tu peux voir celles d’un appareil précis.'], act: ['Mon équipement', 'equip'] },
+  { g: ['equipement|appareil|appareils|four|mixeur|micro ondes|micro onde|plaques|air fryer|airfryer|thermomix|cookeo|barbecue|gaufrier', 'ou|regler|changer|ajouter|j ai|grisee|grisees|cocher|mon'], app: true, x: ['cuire', 'cuisson', 'temps', 'prechauffer', 'tournante', 'recette', 'idee', 'quoi', 'manger', 'cuisiner', 'sans', 'pas de'],
+    a: ['Ton équipement se règle dans **Moi → Mon équipement**, ou en touchant « Appareils » sur le plan de travail de « Ma cuisine » (onglet Stock) : plaques, four, micro-ondes, mixeur, air fryer, Thermomix, Cookeo, barbecue, appareil à raclette et gaufrier.', 'Si un de tes appareils fait l’affaire (un burger à la poêle, des frites au four, un plat au Cookeo en cocotte), la recette reste faisable et sa fiche explique comment faire. Sinon elle est **grisée**, avec « Il faut un four ». Dans Recettes → Filtres → « Appareil », tu peux voir celles d’un appareil précis.'], act: ['Mon équipement', 'equip'] },
   { g: ['toujours chez moi|placard|base|bases|sel|poivre|huile', 'toujours|regler|cocher|compte|courses|manque'], app: true, x: ['combien', 'garder', 'conserver', 'remplacer', 'trop'],
     a: ['**« Toujours chez moi »** (Moi, ou l’étagère « Toujours là » dans Ma cuisine) : ce que tu as en permanence, comme le sel, le poivre ou l’huile. Ces produits comptent toujours comme disponibles et ne partent jamais dans les courses.'], act: ['Toujours chez moi', 'pantry'] },
-  { g: ['recette', 'creer|ajouter|ma propre|mes propres|perso|personnelle|modifier|adapter'], app: true,
+  { g: ['recette', 'creer|ajouter|ma propre|mes propres|perso|personnelle|modifier|adapter'], app: true, x: ['air fryer', 'airfryer', 'four', 'cookeo', 'thermomix', 'barbecue', 'micro ondes'],
     a: ['Onglet **Recettes**, bouton **+** en haut : tu crées ta recette (ingrédients, étapes). Pour partir d’une recette existante, ouvre-la et touche **« Adapter »**.'], act: ['Ouvrir les recettes', 'tab:recipes'] },
   { g: ['sauvegarde|sauvegarder|telephone|changer de telephone|nouveau telephone|transferer|exporter|perdre|donnees'], app: true, x: ['code barre'],
     a: ['Tes données sont **sur ton téléphone**, rien n’est envoyé sur internet. Une mise à jour de l’app ne les efface jamais.', '**Moi → Sauvegarde** : télécharge une copie de temps en temps, ou « Envoyer vers un autre téléphone ». N’utilise jamais « Effacer les données du site » dans Chrome.'], act: ['Ouvrir Moi', 'tab:me'] },
@@ -143,6 +143,83 @@ const KNOW = [
     a: ['Tout marche **sans internet** : stock, recettes, semaine, courses et moi. Seules la dictée vocale et la recherche de code-barres en ont besoin.'] },
   { g: ['mise a jour|mettre a jour|nouvelle version|version'], app: true,
     a: ['La nouvelle version s’installe **toute seule** quand tu ouvres l’app avec internet. Tes données sont gardées : surtout ne désinstalle pas l’app. Ta version est écrite dans Moi → Application.'] },
+  // ---------- faire sans l'appareil prévu ----------
+  { g: ['air fryer|airfryer|friteuse sans huile', 'four'], x: ['idee', 'idees', 'regler', 'cocher'],
+    a: ['Passer du **four** au **air fryer** : baisse la température de **20 °C** et compte environ **20 % de temps en moins**, dans un plat qui tient dans le panier (pas collé aux bords pour que l’air circule). Ex. : 200 °C / 25 min au four → 180 °C / 20 min.', 'Dans l’autre sens, du air fryer au four : même température en chaleur tournante (ou 20 °C de plus), sur une plaque en une seule couche, et environ **1,5 fois** le temps.', 'Mon Frigo le fait tout seul : une recette prévue au four n’est pas grisée si tu as un air fryer et que le plat tient dedans.'] },
+  { g: ['frite|frites', 'four'], x: ['recette', 'idee', 'idees', 'air fryer', 'airfryer'],
+    a: ['Des **frites au four** croustillantes : coupe des bâtonnets de 1 cm, rince-les et sèche-les bien, mélange avec 1 cuillère d’huile, puis 30 à 35 min à **220 °C** en une seule couche, en les retournant à mi-cuisson. Sale à la sortie.', 'Frites surgelées : 200 à 220 °C, le temps indiqué sur le paquet (souvent 20 à 25 min).'], act: ['Frites au air fryer', 'ask:frites au air fryer combien de temps'] },
+  { g: ['cookeo|multicuiseur|autocuiseur|cocotte minute', 'sans|pas de|cocotte|casserole|plaques|remplacer|a la place|normale|classique'], x: ['idee', 'idees', 'regler', 'cocher', 'combien de temps'],
+    a: ['Sans Cookeo, une **cocotte** sur les plaques fait tout : « Dorer » = faire revenir à feu vif, et la cuisson sous pression devient une cuisson **à couvert à feu doux, environ 3 fois plus longue**.', '• Riz 15 à 18 min · pâtes : le temps du paquet · poulet en morceaux 30 min · bœuf à mijoter 2 h à 2 h 30 · lentilles 25 à 30 min', 'Ajoute un peu de liquide si ça attache. Mon Frigo ne grise pas les recettes au Cookeo si tu as des plaques.'] },
+  { g: ['thermomix|robot cuiseur', 'sans|pas de|remplacer|a la place|casserole|mixeur|normal|classique'], x: ['idee', 'idees', 'regler', 'cocher'],
+    a: ['Sans Thermomix : **hache au couteau**, fais revenir dans une casserole, puis cuis à feu doux en remuant souvent, avec les mêmes temps.', 'Quand la recette dit « mixer » (soupe, gaspacho), passe au mixeur ou au mixeur plongeant. « Sens inverse » veut juste dire « sans abîmer les morceaux » : remue doucement à la cuillère.'] },
+  { g: ['micro ondes|micro onde|microondes', 'sans|pas de|remplacer|a la place|casserole|four'], x: ['idee', 'idees', 'regler', 'cocher', 'decongel*'],
+    a: ['Sans micro-ondes : à la **casserole**, à feu doux et à couvert en remuant (pour réchauffer ou cuire), ou au **four à 180 °C** en comptant environ 3 fois le temps (mug cake, pomme cuite, patate douce…).'] },
+  { g: ['barbecue|barbec|bbq|plancha', 'sans|pas de|poele|remplacer|a la place|four|interieur'], x: ['idee', 'idees', 'regler', 'cocher'],
+    a: ['Sans barbecue : une **poêle-gril** ou une poêle bien chaude fait très bien l’affaire, avec les mêmes temps (burgers, saucisses, brochettes, légumes). Sinon, **sous le grill du four** à 10 cm de la résistance, en retournant à mi-cuisson.', 'Mon Frigo ne grise pas les recettes au barbecue si tu as des plaques.'] },
+  { g: ['raclette', 'sans|pas d appareil|pas de|four|remplacer|a la place'], x: ['idee', 'idees', 'regler', 'cocher', 'combien', 'quantite'],
+    a: ['Sans appareil à raclette : pose les tranches de fromage sur les pommes de terre chaudes dans un plat et fais gratiner **8 à 10 min sous le grill du four**. Ou fais fondre le fromage à la poêle, couvercle fermé, 2 min.'] },
+  { g: ['mixeur|blender|mixer', 'sans|pas de|remplacer|a la place'], x: ['idee', 'idees', 'regler', 'cocher'],
+    a: ['Sans mixeur : un **presse-purée** ou une fourchette pour les soupes paysannes et les compotes, un fouet pour les pâtes (crêpes, gâteaux). Un Thermomix fait aussi le mixeur.'] },
+  // ---------- quand ça rate ----------
+  { g: ['sauce|soupe|creme|jus', 'trop liquide|pas assez epaisse|trop claire|epaissir|lier|liee|epaissit pas'],
+    a: ['Pour épaissir : délaye **1 cuillère de maïzena dans un peu d’eau froide**, verse en remuant et laisse bouillir 1 min. Ou laisse **réduire** à découvert quelques minutes.', 'Autres astuces : un peu de crème, un jaune d’œuf hors du feu (sans bouillir ensuite), ou une pomme de terre écrasée dans une soupe.'] },
+  { g: ['sauce|soupe|puree|pate', 'trop epaisse|trop epais|trop compacte|trop dure|allonger|detendre'],
+    a: ['Pour allonger : ajoute **un peu de liquide chaud** petit à petit (bouillon, lait, eau de cuisson des pâtes) en remuant, jusqu’à la bonne texture. Goûte ensuite le sel.'] },
+  { g: ['trop sucre|trop sucree|trop de sucre|trop sucres'],
+    a: ['Trop sucré : équilibre avec un peu d’**acidité** (jus de citron, vinaigre, yaourt nature) ou allonge avec la même préparation sans sucre. Pour un dessert, sers-le avec un fruit acide ou un laitage nature.'] },
+  { g: ['trop gras|trop grasse|trop d huile|trop de beurre|graisse'], x: ['remplacer'],
+    a: ['Sur une soupe ou une sauce : laisse reposer 2 min et retire le gras en surface avec une cuillère, ou passe une feuille d’essuie-tout à la surface. Au frigo, le gras fige et s’enlève tout seul.'] },
+  { g: ['brule|brulee|brules|cramé|crame|cramee|attache|attachee|accroche'], x: ['four'],
+    a: ['Ça a brûlé au fond ? **Ne gratte pas** : transvase vite ce qui n’a pas brûlé dans une autre casserole, le goût de brûlé reste au fond. Pour décoller la casserole : un fond d’eau avec du bicarbonate (ou du liquide vaisselle), porte à ébullition 5 min.'] },
+  { g: ['viande|steak|poulet|boeuf|roti|escalope', 'dure|seche|caoutchouc|trop cuite|pas tendre'],
+    a: ['Pour une viande tendre : sors-la du frigo 20 min avant, saisis-la à feu vif sans la piquer, puis laisse-la **reposer** quelques minutes avant de couper.', 'Si elle est déjà trop cuite : coupe-la en fines lamelles et fais-la mijoter quelques minutes dans une sauce (crème, tomate) : elle redevient moelleuse.'] },
+  { g: ['gateau|cake|moelleux|fondant|brownie', 'pas cuit|cru|coulant|retombe|retombé|sec|seche|colle au moule|demouler|demoule'],
+    a: ['Pour vérifier la cuisson : plante la **pointe d’un couteau** au centre, elle doit ressortir sèche (sauf pour un fondant).', 'Gâteau retombé : four ouvert trop tôt ou trop de levure. Gâteau sec : trop cuit, sers-le avec une crème anglaise ou un sirop.', 'Pour démouler facilement : beurre et farine le moule, et attends 10 min avant de démouler.'] },
+  { g: ['chantilly|creme fouettee', 'monte pas|monter|tourne|beurre|liquide|rate'],
+    a: ['Une chantilly qui monte : crème **entière à 30 % de matière grasse, très froide** (et le bol aussi, 15 min au congélateur). Fouette d’abord doucement puis plus vite, et ajoute le sucre à la fin. Arrête-toi dès qu’elle tient : trop fouettée, elle tourne en beurre.'] },
+  { g: ['pate a pizza|pate a pain|pate|pain|brioche', 'leve pas|monte pas|pas leve|gonfle pas|lever'],
+    a: ['Une pâte qui ne lève pas : la **levure de boulanger** a besoin de tiède (eau à 35 °C, pas plus chaude) et d’un endroit sans courant d’air, 1 h à 1 h 30. Le sel ne doit pas toucher directement la levure. Astuce : le four éteint avec juste la lumière allumée.'] },
+  { g: ['puree', 'collante|elastique|colle|gluante'],
+    a: ['Une purée devient élastique quand on la **mixe** : écrase les pommes de terre au presse-purée ou à la fourchette, et ajoute le lait chaud puis le beurre en remuant doucement.'] },
+  { g: ['chocolat', 'graine|grainé|durci|tourne|fige|figé|rate'], x: ['recette', 'idee'],
+    a: ['Le chocolat a « grainé » ? Une goutte d’eau ou trop de chaleur. Rattrape-le en ajoutant 1 à 2 cuillères de crème chaude ou de lait chaud et en fouettant. Fais-le toujours fondre doucement, au bain-marie ou 30 s par 30 s au micro-ondes.'] },
+  // ---------- petit lexique de cuisine ----------
+  ...[
+    ['bain marie', 'Le **bain-marie** : faire chauffer doucement un récipient posé dans une casserole d’eau frémissante, sans qu’il touche l’eau. Parfait pour faire fondre le chocolat ou cuire une crème sans la brûler.'],
+    ['blanchir', '**Blanchir** : plonger un légume quelques minutes dans l’eau bouillante salée, puis dans l’eau froide. Pour les légumes, ça garde leur couleur ; « blanchir des jaunes et du sucre », c’est les fouetter jusqu’à ce que le mélange pâlisse.'],
+    ['deglacer', '**Déglacer** : verser un peu de liquide (vin, bouillon, eau) dans la poêle chaude après avoir saisi une viande, et gratter le fond : les sucs donnent une sauce pleine de goût.'],
+    ['reduire|faire reduire', '**Réduire** : laisser bouillir une sauce ou un bouillon à découvert pour que l’eau s’évapore : la sauce épaissit et prend du goût.'],
+    ['monter en neige|blancs en neige', '**Monter en neige** : fouetter les blancs d’œufs (sans aucune trace de jaune) avec une pincée de sel jusqu’à ce qu’ils soient fermes : ils doivent tenir dans le bol retourné.'],
+    ['julienne', 'Une **julienne** : des légumes taillés en fins bâtonnets, comme des allumettes (carottes, poireaux…).'],
+    ['emincer', '**Émincer** : couper en tranches fines (oignon, champignons, poulet…).'],
+    ['ciseler', '**Ciseler** : couper très finement des herbes (aux ciseaux ou au couteau), ou tailler un oignon en tout petits dés.'],
+    ['abaisser|etaler la pate', '**Abaisser** une pâte : l’étaler au rouleau à l’épaisseur voulue (souvent 3 à 4 mm pour une tarte).'],
+    ['foncer|foncer un moule', '**Foncer** un moule : y déposer la pâte étalée en la faisant bien épouser les bords.'],
+    ['napper', '**Napper** : recouvrir d’une sauce. « La crème nappe la cuillère » : elle reste sur le dos de la cuillère et le doigt y laisse une trace nette.'],
+    ['zester|zeste', 'Le **zeste**, c’est la peau colorée d’un agrume (citron, orange), sans la partie blanche amère. Râpe-le finement : il parfume énormément.'],
+    ['roux', 'Un **roux** : beurre fondu + farine cuits 1 à 2 min en remuant. C’est la base de la béchamel : on y ajoute ensuite le lait petit à petit.'],
+    ['al dente', '**Al dente** : des pâtes cuites mais qui résistent encore un peu sous la dent. Goûte 1 min avant le temps du paquet.'],
+    ['papillote', 'Une **papillote** : un aliment enfermé dans du papier cuisson (ou d’aluminium) bien fermé, qui cuit dans sa vapeur. Idéal pour le poisson : 15 à 20 min à 200 °C.'],
+    ['braiser', '**Braiser** : cuire longtemps à couvert, à feu doux, avec un peu de liquide, après avoir fait dorer. Pour les viandes à mijoter et certains légumes (endives, fenouil).'],
+    ['mijoter', '**Mijoter** : cuire doucement à petits frémissements, souvent à couvert, longtemps. C’est ce qui rend tendres les plats en sauce.'],
+    ['saisir', '**Saisir** : faire cuire à feu très vif quelques instants pour colorer l’extérieur (viande, poisson) et garder le jus à l’intérieur.'],
+    ['flamber', '**Flamber** : verser un alcool chaud sur un plat et l’enflammer, pour garder le goût sans l’alcool. Hotte éteinte et cheveux attachés !'],
+    ['chemiser', '**Chemiser** un moule : le tapisser de papier cuisson, ou le beurrer et le fariner, pour démouler facilement.'],
+    ['beurre pommade', 'Du **beurre pommade** : beurre ramolli à température ambiante, qui a la texture d’une crème. Sors-le 1 h avant (ou 10 s au micro-ondes).'],
+    ['sabler', '**Sabler** : mélanger du beurre froid et de la farine du bout des doigts jusqu’à obtenir une texture de sable. C’est le début d’une pâte brisée ou d’un crumble.'],
+    ['pocher', '**Pocher** : cuire dans un liquide qui frémit sans bouillir (eau, bouillon, sirop). Pour les œufs pochés : 3 min dans l’eau frémissante avec un filet de vinaigre.'],
+    ['revenir|faire revenir|rissoler', '**Faire revenir** : cuire dans un peu de matière grasse, à feu moyen, en remuant, jusqu’à ce que ce soit doré (oignons, lardons…).'],
+    ['suer|faire suer', '**Faire suer** : cuire doucement des légumes (oignons, échalotes) dans un peu de matière grasse, sans les colorer, pour qu’ils rendent leur eau et deviennent tendres.'],
+    ['singer', '**Singer** : saupoudrer de farine une viande déjà dorée, mélanger 1 min, puis mouiller avec le liquide : ça épaissit la sauce d’un ragoût.'],
+    ['mirepoix', 'Une **mirepoix** : carotte, oignon et céleri coupés en petits dés, revenus ensemble pour donner du goût à une sauce ou un plat mijoté.'],
+    ['bouquet garni', 'Un **bouquet garni** : thym, laurier et queues de persil ficelés ensemble, qu’on met dans un plat mijoté et qu’on retire à la fin.'],
+    ['fond de veau|fond blanc|fumet', 'Un **fond** (de veau, de volaille) ou un **fumet** (de poisson) : un bouillon concentré qui sert de base aux sauces. En poudre, délaye 1 cuillère dans 25 cl d’eau chaude.'],
+    ['ruban|faire le ruban', '**Faire le ruban** : fouetter jaunes et sucre jusqu’à ce que le mélange coule de la cuillère comme un ruban qui se plie sans se casser.'],
+    ['crème anglaise|creme anglaise', 'La **crème anglaise** : lait vanillé chaud versé sur des jaunes fouettés avec du sucre, puis cuit à feu doux sans bouillir en remuant, jusqu’à ce qu’elle nappe la cuillère (83 °C).'],
+    ['caraméliser|caramelise|caramelisee|caramelises', '**Caraméliser** : cuire avec du sucre (ou laisser le sucre naturel d’un aliment, comme l’oignon) jusqu’à une belle couleur dorée et un goût légèrement grillé.'],
+    ['detendre', '**Détendre** une préparation : la rendre plus fluide en ajoutant un peu de liquide (lait, crème, bouillon).'],
+    ['concasser|concasse|concassee', '**Concasser** : couper grossièrement (tomates, noix, herbes). Des « tomates concassées », ce sont des tomates pelées en petits morceaux.'],
+  ].map(([w, d]) => ({ g: [w, 'c est quoi|quoi|definition|ca veut dire|veut dire|signifie|explique|comment|kesako|ca sert|sert a|qu est ce'], a: [d] })),
   // ---------- petite conversation ----------
   { g: ['qui es tu|t es qui|tu es qui|c est quoi ton nom|comment tu t appelles|ton nom|presente toi'], small: true,
     a: ['Moi c’est **Frigo**, le petit assistant de ton app 🧑‍🍳 Je connais ton stock, tes recettes, ta semaine et tes courses, et je réponds aux questions de cuisine. Tout se passe sur ton téléphone.'] },
@@ -156,8 +233,16 @@ const KNOW = [
     a: ['Et si on cuisinait un truc nouveau ? Demande-moi « une recette jamais faite » ou « un dessert rapide » 😉'], act: ['Une idée au hasard', 'ask:surprends-moi'] },
   { g: ['bonne nuit|a demain|au revoir|bye|a plus|ciao'], small: true,
     a: ['À bientôt ! Pense à jeter un œil à ce qui périme demain 😉'] },
-  { g: ['je t aime|t es genial|tu es genial|t es top|tu es top|bravo|trop fort'], small: true,
+  { g: ['je t aime|t es genial|tu es genial|t es top|tu es top|bravo|trop fort|t es le meilleur|tu es le meilleur|trop bien|tu geres|tu es fort|t es fort'], small: true,
     a: ['Oh, merci ! 😊 Moi aussi j’aime bien cuisiner avec toi.'] },
+  { g: ['nul|nulle|bete|idiot|debile|inutile|sers a rien|pas terrible|pourri|naze|comprends rien|tu comprends pas|t es lent|tu es lent'], small: true, x: ['recette'],
+    a: ['Oups, désolé 😅 Je fonctionne sans internet, alors je connais surtout la cuisine, tes recettes et ton frigo. Redis-moi ce que tu cherchais avec d’autres mots, ou essaie « une idée pour ce soir », « combien de temps cuire le riz », « qu’est-ce que j’ai dans le frigo ».'] },
+  { g: ['flemme|pas envie de cuisiner|pas le courage|la fleme|fatigue|creve|epuise|pas le temps'], small: true, x: ['recette'],
+    a: ['Je comprends 😴 Voici de quoi manger vite fait, en 15 min max.'], act: ['Une idée en 15 min', 'ask:une idée rapide en 15 min avec ce que j’ai'] },
+  { g: ['bon appetit|on passe a table|a table'], small: true,
+    a: ['Bon appétit ! 😋 Pense à toucher « Cuisiné » sur ta recette pour mettre ton stock à jour.'] },
+  { g: ['merci|thanks'], small: true,
+    a: ['Avec plaisir 😊'] },
 ];
 
 // ---------- correspondance texte ↔ fiche ----------
@@ -209,7 +294,20 @@ export function know(text) {
   const m = knowMatch(text); if (!m) return null;
   const e = m.e;
   const lines = e.jokes ? [e.jokes[Math.floor(Math.random() * e.jokes.length)]] : e.a;
-  return { lines, act: e.act || null, app: !!e.app, small: !!e.small, score: m.sc };
+  return { lines, act: e.act || null, app: !!e.app, small: !!e.small, score: m.sc, keep: e.g.some(a => /conserv|garde|frigo|congel/.test(a)) };
+}
+// une question tournée autrement : la fiche dont le SUJET (premier groupe, mot de 5 lettres ou plus) est cité, quand rien d'autre n'a répondu
+export function knowNear(text) {
+  const t = prep(text); let best = null;
+  for (const { e, g, x } of GROUPS) {
+    if (e.small || e.app || x.some(w => t.includes(' ' + w + ' '))) continue;
+    const hit = g[0].split('|').filter(w => w.replace('*', '').length >= 5 && t.includes(' ' + w.replace('*', '') + (w.endsWith('*') ? '' : ' '))).map(w => w.length);
+    if (!hit.length) continue;
+    const sc = Math.max(...hit) + g.slice(1).filter(a => alt(t, a)).length * 10;
+    if (!best || sc > best.sc) best = { e, sc };
+  }
+  if (!best) return null;
+  return { lines: best.e.jokes ? [best.e.jokes[0]] : best.e.a, act: best.e.act || null, app: false, small: false, score: best.sc, keep: false };
 }
 // tous les mots connus (pour corriger les fautes de frappe)
 export const KNOW_WORDS = [...new Set(KNOW.flatMap(e => [...e.g, ...(e.x || [])].flatMap(a => a.split('|')).flatMap(w => w.replace('*', '').split(' '))).filter(w => w.length >= 4))];

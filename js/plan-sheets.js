@@ -4,8 +4,7 @@ import { h, btn, openSheet, toast, stepper, seg, chip, field, empty, tile, clear
 import { icon } from './icons.js';
 import { S, mutate, set, ctx } from './state.js';
 import { todayISO, addDays, norm, dayName } from './util.js';
-import { score, allowed, search, missingEquip } from './recipes.js';
-import { withArticle } from './equipment.js';
+import { score, allowed, search, missingEquip, lockText } from './recipes.js';
 import { slotName, myDishes, dishEmoji } from './plan.js';
 import { openCustomRecipe, openFinishCook, openRecipe } from './recipe-sheets.js';
 
@@ -13,7 +12,7 @@ const kb = S.kb;
 
 // ---------- planning ----------
 // « · il faut un four » à côté d'une recette grisée faute d'appareil
-const lockTxt = r => { const m = r.custom ? [] : missingEquip(r, S.data.prefs); return m.length ? ` · il faut ${withArticle(m)}` : ''; };
+const lockTxt = r => { const m = r.custom ? [] : missingEquip(r, S.data.prefs); return m.length ? ' · ' + lockText(r, S.data.prefs).replace(/^I/, 'i') : ''; };
 const FREE_IDEAS = ['Restes', 'Restaurant', 'Chez des amis', 'Plat préparé', 'Livraison', 'Sandwich', 'Pizza', 'Raclette', 'Barbecue', 'Je saute ce repas'];
 
 function openFreeMeal(date, slot, current) {

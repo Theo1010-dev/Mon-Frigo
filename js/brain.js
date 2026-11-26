@@ -64,6 +64,15 @@ export function shopItems(text) {
 }
 
 // moment du repas, temps, régime, budget…
+// cuisines du monde dites en mots → famille du filtre « Cuisine », ou cuisines exactes
+const CUISINE_WORDS = [[['italien', 'italienne', 'italiens', 'italiennes'], { fam: 'italie' }], [['japonais', 'japonaise'], { k: ['Japonaise'] }], [['chinois', 'chinoise'], { k: ['Chinoise', 'Asiatique'] }],
+  [['thai', 'thailandais', 'thailandaise'], { k: ['Thaïlandaise', 'Asiatique'] }], [['asiatique', 'asiatiques'], { fam: 'asie' }], [['indien', 'indienne'], { fam: 'inde' }],
+  [['mexicain', 'mexicaine', 'tex mex'], { k: ['Mexicaine', 'Tex-Mex'] }], [['americain', 'americaine'], { k: ['Américaine'] }], [['espagnol', 'espagnole'], { k: ['Espagnole'] }],
+  [['grec', 'grecque'], { k: ['Grecque'] }], [['marocain', 'marocaine', 'oriental', 'orientale', 'libanais', 'libanaise', 'turc', 'turque'], { fam: 'medit' }], [['francais', 'francaise', 'terroir', 'traditionnel', 'traditionnelle'], { fam: 'france' }]];
+// types de plat dits en mots → catégorie de recettes
+const DISH_CATS = [[['une salade', 'des salades', 'salade composee', 'salades composees', 'une grosse salade', 'salade complete'], 'Salades'], [['une soupe', 'des soupes', 'un veloute', 'un potage', 'une soupe chaude'], 'Soupes'],
+  [['un gratin', 'des gratins'], 'Gratins & four'], [['une tarte', 'une tarte salee', 'des tartes'], 'Tartes & pizzas'],
+  [['un sandwich', 'des sandwichs'], 'Sandwichs'], [['un plat mijote', 'des plats mijotes', 'un mijote', 'un ragout'], 'Plats mijotés']];
 export function findWish(text) {
   const t = flat(text), w = {};
   if (has(t, 'dessert', 'desserts', 'sucre', 'sucree', 'gateau', 'gateaux', 'patisserie', 'cake', 'cookie', 'cookies', 'gourmandise', 'douceur')) w.moment = 'dessert';
@@ -76,9 +85,22 @@ export function findWish(text) {
   if (has(t, 'pas cher', 'economique', 'petit budget', 'fin de mois', 'pas chere', 'budget', 'moins cher', 'moins chere')) w.cheap = true;
   if (has(t, 'avec ce que j ai', 'sans courses', 'sans faire de courses', 'faisable', 'tout ce qu il faut', 'avec mon stock', 'avec mon frigo', 'avec ce qu il y a')) w.have = true;
   if (has(t, 'hasard', 'surprends moi', 'surprise', 'n importe quoi')) w.random = true;
-  if (has(t, 'sans cuisson', 'sans four', 'sans cuire', 'sans rien cuire', 'pas de four', 'sans plaque')) w.nocook = true;
+  if (has(t, 'sans cuisson', 'sans cuire', 'sans rien cuire', 'pas de cuisson')) w.nocook = true;
+  // un appareil qu'on n'a pas : « j'ai pas de four », « sans micro-ondes »
+  const no = [['four', 'four'], ['micro-ondes', 'micro ondes', 'micro onde', 'microondes'], ['plaques', 'plaque', 'plaques', 'gaz', 'feu']].filter(([, ...ws]) => ws.some(x => has(t, 'sans ' + x, 'pas de ' + x, 'pas d ' + x, 'plus de ' + x, 'ni ' + x, 'ni de ' + x))).map(x => x[0]);
+  if (no.length) w.without = no;
   if (has(t, 'leger', 'legere', 'light', 'healthy', 'equilibre', 'sain')) w.light = true;
-  // un appareil précis : « une recette au air fryer », « au Thermomix », « au Cookeo », « au barbecue », « une raclette »
+  // une cuisine (« un plat italien », « quelque chose de japonais »)
+  for (const [ws, c] of CUISINE_WORDS) if (ws.some(x => has(t, x))) { w.cuisine = c; break; }
+  // un type de plat (« une soupe », « une salade composée », « un gratin »)
+  for (const [ws, c] of DISH_CATS) if (ws.some(x => has(t, x))) { w.cat = c; break; }
+  if (has(t, 'chaud', 'chaude', 'qui rechauffe', 'rechauffe', 'reconfortant', 'reconfortante', 'reconfort') && !has(t, 'chevre chaud', 'chocolat chaud')) w.hot = true;
+  if (has(t, 'flemme', 'fleme', 'pas envie de cuisiner', 'pas le courage', 'creve', 'crevee', 'epuise', 'epuisee', 'fatigue', 'fatiguee')) w.maxTime = Math.min(w.maxTime || 99, 15);
+  if (has(t, 'enfant', 'enfants', 'gamin', 'gamins', 'gosses', 'les petits', 'mes petits', 'ado', 'ados')) w.kids = true;
+  if (has(t, 'amis', 'potes', 'copains', 'invites', 'recevoir', 'recoit', 'on recoit', 'reception', 'fete', 'soiree', 'anniversaire', 'du monde', 'beaucoup de monde', 'famille')) w.party = true;
+  // un appareil précis : « une recette au air fryer », « au Thermomix », « au Cookeo », « au barbecue », « une raclette » (pas « sans Thermomix »)
+  const noAppl = / (sans|pas de|pas d) (air fryer|airfryer|cookeo|thermomix|barbecue|bbq|plancha|gaufrier|raclette|appareil a raclette|micro ondes|mixeur|four) /.test(t);
+  if (noAppl) return w;
   if (has(t, 'air fryer', 'airfryer', 'air fryers', 'friteuse sans huile')) w.equip = 'air_fryer';
   else if (has(t, 'barbecue', 'barbecues', 'barbec', 'bbq', 'plancha', 'grillade', 'grillades')) w.equip = 'barbecue';
   else if (has(t, 'appareil a raclette', 'une raclette', 'soiree raclette', 'faire une raclette', 'raclette ce soir', 'idee raclette') || (has(t, 'raclette') && !has(t, 'fromage'))) w.equip = 'raclette';
@@ -112,6 +134,15 @@ export function intent(text) {
   if (!q && !has(t, 'quoi', 'quel', 'quelle', 'qu est ce', 'combien') && starts(t, 'mets', 'met ', 'planifie', 'prevois', 'programme', 'note', 'ajoute', 'rajoute', 'on mange', 'je mange', 'on fait', 'je fais', 'on se fait', 'je me fais', 'mangeons')
     && (has(t, 'demain', 'soir', 'midi', 'aujourd hui', 'dejeuner', 'diner', 'apres demain') || JOURS.some(j => has(t, j)))) return 'planAdd';
   if (!q && (has(t, 'demain', 'ce soir', 'ce midi', 'apres demain') || JOURS.some(j => has(t, j))) && !starts(t, 'idee', 'recette', 'propos', 'quoi', 'suggest', 'inspir') && !Object.keys(findWish(text)).length && leftover(text).length >= 3) return 'planAdd';
+  // hors de la cuisine : l'heure et la date, je les ai ; la météo ou l'actualité, non (pas d'internet)
+  if (has(t, 'quelle heure', 'l heure qu il est', 'quel jour on est', 'on est quel jour', 'quelle date', 'on est le combien', 'quel jour sommes nous')) return 'clock';
+  if (has(t, 'meteo', 'quel temps fait', 'quel temps il fait', 'quel temps va', 'il va pleuvoir', 'va t il pleuvoir', 'il fait beau', 'actualite', 'actualites', 'les infos', 'resultat du match', 'score du match')) return 'offtopic';
+  // « combien de lait il me reste », « j'ai combien d'œufs » : le stock, pas la conservation
+  if (has(t, 'j ai combien', 'combien j ai', 'combien il me reste', 'combien il reste', 'combien me reste', 'combien en reste', 'combien j en ai', 'il me reste combien') || / combien d?e? ?[a-z ]+ il me reste /.test(t)) return 'stock';
+  // « planifie ma semaine » : proposer des repas pour les jours vides
+  if (/ (planifie|planifier|organise|organiser|remplis|remplir|prepare|preparer|fais|faire|propose|proposer|genere|compose|composer)( moi)? (ma|la|une|mes|les|des) (semaine|menus|menu de la semaine|repas de la semaine) /.test(t) || has(t, 'menus de la semaine', 'menu de la semaine')) return 'weekAuto';
+  // « je n'ai pas de crème » (un ingrédient, pas un appareil) : par quoi le remplacer
+  if (/ (je n ai pas|j ai pas|il me manque|j en ai pas|je n en ai pas) (de |d |du |des |la |le )/.test(t) && !has(t, 'quoi', 'idee', 'recette', 'manger', 'cuisiner', 'four', 'micro ondes', 'plaques', 'mixeur', 'cookeo', 'thermomix', 'air fryer', 'barbecue', 'temps', 'courses')) return 'substitute';
   if (starts(t, 'perim', 'perem', 'dlc', 'dluo', 'date limite', 'gaspi', 'gaspill') || has(t, 'a finir', 'consommer vite', 'urgent', 'urgence', 'va pas tarder', 'vont pas tarder', 'bientot perime', 'a manger vite')) return 'expiring';
   if (has(t, 'se conserve', 'se garde', 'conserver', 'garder', 'conservation', 'tient combien', 'combien de temps', 'congeler', 'se congele')) return 'keep';
   if (starts(t, 'remplac', 'substitu') || has(t, 'a la place', 'a la place de', 'pas de', 'plus de') && has(t, 'remplacer', 'mettre a la place')) return 'substitute';
@@ -214,4 +245,4 @@ export function splitRequests(text) {
   return parts.length > 1 && parts.length <= 4 ? parts : [String(text).trim()];
 }
 // mots-clés des intentions (pour le correcteur)
-export const BRAIN_WORDS = ('airfryer fryer thermomix cookeo multicuiseur autocuiseur barbecue plancha grillade grillades gaufrier gaufres raclette appareil appareils equipement perime perimer peremption conserver conserve garder congeler congelateur remplacer remplace substituer statistiques bilan courses acheter planifier planning programme prevu menu dessert desserts apero aperitif entree entrees gouter petit dejeuner diner brunch rapide rapidement facile vegetarien vegetarienne economique budget hasard surprise cuisson cuire leger legere equilibre healthy saison achete fini termine recette recettes manger cuisiner idee idees propose inspire envie aime adore deteste horreur supporte allergique niveau experience succes badge appris habitudes ' + JOURS.join(' ')).split(' ');
+export const BRAIN_WORDS = ('airfryer fryer thermomix cookeo multicuiseur autocuiseur barbecue plancha grillade grillades gaufrier gaufres raclette composee composees italien italienne asiatique japonais japonaise chinois chinoise thailandais indien indienne mexicain mexicaine americain espagnol espagnole grecque marocain marocaine libanais oriental orientale francais francaise traditionnel enfants gamins invites anniversaire soiree meteo actualite planifie organise remplis semaine menus flemme epaissir lier deglacer blanchir julienne emincer ciseler abaisser napper zester pocher braiser mijoter saisir flamber chemiser sabler appareil appareils equipement perime perimer peremption conserver conserve garder congeler congelateur remplacer remplace substituer statistiques bilan courses acheter planifier planning programme prevu menu dessert desserts apero aperitif entree entrees gouter petit dejeuner diner brunch rapide rapidement facile vegetarien vegetarienne economique budget hasard surprise cuisson cuire leger legere equilibre healthy saison achete fini termine recette recettes manger cuisiner idee idees propose inspire envie aime adore deteste horreur supporte allergique niveau experience succes badge appris habitudes ' + JOURS.join(' ')).split(' ');

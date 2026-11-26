@@ -75,6 +75,19 @@ def audit(R):
             if "  " in s or "{" in s or "None" in s: problems.append((r["title"], "texte suspect", s[:60]))
     return problems
 
+# appareils de remplacement propres à une recette (les autres sont réglés dans l'app : air fryer → four, Cookeo → cocotte…)
+# four → air fryer : pour un plat qui tient dans le panier (pas les tartes, pizzas, gâteaux en moule, rôtis entiers, pains, soufflés…)
+NOT_AIR = re.compile(r"(?i)tarte|quiche|pizza|gâteau|cake|clafoutis|rôti|gigot|soufflé|meringue|brioche|\bpain\b|bûche|tatin|\bflan\b|\bfar\b|génoise|biscuit|baba|savarin|galette|pithiviers|pissaladière|flammekueche|calzone|lahmacun|pavlova|charlotte|kouign|kugelhopf|panettone|strudel|wellington|en croûte|poulet entier|poulet rôti|dinde|cassoulet|baeckeoffe|focaccia|fougasse|madeleine|financier|cannelé")
+MIX_STEP = re.compile(r"(?i)vitesse 5 à 10|à la vitesse 10|\d+ min[^.]{0,20}vitesse (?:[6-9]|10)\b")   # vrai mixage long (soupe, gaspacho) ; hacher ou râper 10 s se fait au couteau
+def alternatives(r, equip):
+    x = {}
+    if "four" in equip and CAT_MAP.get(r["cat"], r["cat"]) != "Tartes & pizzas" and r["serv"] <= 4 and not NOT_AIR.search(r["title"]): x["four"] = [["air_fryer"]]
+    # sans Thermomix : une casserole, et un mixeur seulement si la recette mixe vraiment
+    if "thermomix" in equip:
+        txt = " ".join(r["steps"]); need = (["plaques"] if "°C" in txt else []) + (["mixeur"] if MIX_STEP.search(txt) else [])
+        x["thermomix"] = [need or ["plaques"]]
+    return x
+
 def main():
     R = all_recipes(); seen = {}; out = []
     for r in R:
@@ -85,6 +98,8 @@ def main():
         r["tags"] = [t for t in r["tags"] if t not in ("végétarien",)]  # dérivé dans l'app
         out.append(dict(id=sid, t=fix_title(r["title"]), c=CAT_MAP.get(r["cat"], r["cat"]), d=r["diff"], m=r["time"], s=r["serv"], e=sorted(set(r["equip"]) | ({"mixeur"} if needs_mixer(r) else set())), g=r["tags"], k=region(r["title"], r["cuisine"]),
                         mt=meal_of(r), i=r["ing"], p=r["steps"], o=r["src"]))
+        x = alternatives(r, out[-1]["e"])
+        if x: out[-1]["x"] = x
     probs = audit(R)
     probs += [f"{x['t']} : quantité nulle pour {i[0]}" for x in out for i in x['i'] if not i[1] > 0]   # une quantité arrondie à 0 est une erreur
     # tri : classiques d'abord (meilleure qualité), puis par catégorie

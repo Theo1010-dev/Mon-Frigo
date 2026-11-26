@@ -29,7 +29,7 @@ export function equipEditor(get, set) {
   };
   draw(); return box;
 }
-export const EQUIP_HELP = 'Coche les appareils que tu as. Les recettes qui demandent un appareil que tu n’as pas restent visibles, mais grisées.';
+export const EQUIP_HELP = 'Coche les appareils que tu as. Une recette prévue pour un autre appareil reste faisable si un des tiens le remplace (un burger à la poêle, des frites au four) ; sinon, elle est grisée.';
 
 // fenêtre dédiée (depuis « Ma cuisine », les recettes ou l'assistant)
 export function openEquipment(onDone) {

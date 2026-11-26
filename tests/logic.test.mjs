@@ -6,8 +6,8 @@ import { Catalogue, coverage, score, allowed, search, scaleIngredients } from '.
 import { buildShopping, needsFor, mergeShopping, autoPlan, weekDays, weekStart, dishEmoji, myDishes, slotName } from '../js/plan.js';
 import { fmtNum, addDays } from '../js/util.js';
 import { intent, findIngs, findWhen, leftover, shopItems, findWish, isFollowUp, findPeople, findDiet, prefWords, chatNorm, fixTypos, makeVocab, splitRequests, BRAIN_WORDS } from '../js/brain.js';
-import { know, convert as kconvert, KNOW_WORDS } from '../js/know.js';
-import { missingEquip, EQUIP } from '../js/recipes.js';
+import { know, knowNear, convert as kconvert, KNOW_WORDS } from '../js/know.js';
+import { missingEquip, EQUIP, equipPlan, lockText } from '../js/recipes.js';
 import { guessType, TYPES } from '../js/types.js';
 
 const kb = new KB(JSON.parse(fs.readFileSync('data/ingredients.json', 'utf8')));
@@ -225,9 +225,9 @@ t('10 appareils : chacun compte, et l’assistant comprend « au air fryer », �
   for (const k of all) if (!by(k)) throw new Error('aucune recette pour ' + k);
   if (by('cookeo') < 10) throw new Error('recettes Cookeo : ' + by('cookeo'));
   const f = cat.list.find(r => r.t === 'Frites maison au air fryer');
-  eq([missingEquip(f, { equip: ['plaques', 'four'] }), missingEquip(f, { equip: all }), missingEquip(cat.list.find(r => r.t === 'Pâtes carbonara'), { equip: ['four'] })], [['air_fryer'], [], ['plaques']]);
+  eq([missingEquip(f, { equip: ['plaques'] }), missingEquip(f, { equip: ['four'] }), missingEquip(f, { equip: all }), missingEquip(cat.list.find(r => r.t === 'Pâtes carbonara'), { equip: ['four'] })], [['air_fryer'], [], [], ['plaques']]);
   eq([findWish('une recette au air fryer').equip, findWish('un truc au thermomix').equip, findWish('une recette au cookeo').equip, findWish('un plat au multicuiseur').equip, findWish('une idée rapide').equip], ['air_fryer', 'thermomix', 'cookeo', 'cookeo', undefined]);
-  const c = cat.list.find(r => r.t === 'Bœuf bourguignon au Cookeo'); eq([missingEquip(c, { equip: ['plaques', 'four'] }), missingEquip(c, { equip: all })], [['cookeo'], []]);
+  const c = cat.list.find(r => r.t === 'Bœuf bourguignon au Cookeo'); eq([missingEquip(c, { equip: ['four'] }), missingEquip(c, { equip: ['plaques'] }), missingEquip(c, { equip: all })], [['cookeo'], [], []]);
   const ck = know('combien de temps cuire le riz au cookeo'); if (!ck || !ck.lines.join(' ').includes('8 min')) throw new Error('cookeo');
   eq([findWish('une idée au barbecue').equip, findWish('des grillades à la plancha').equip, findWish('une raclette ce soir').equip, findWish('une recette avec du fromage à raclette').equip, findWish('des gaufres pour le goûter').equip, findWish('un gratin au four').equip],
     ['barbecue', 'barbecue', 'raclette', undefined, 'gaufrier', 'four']);
@@ -239,6 +239,32 @@ t('10 appareils : chacun compte, et l’assistant comprend « au air fryer », �
   if (cat.list.some(r => (r.e || []).includes('thermomix') && r.e.includes('mixeur'))) throw new Error('thermomix + mixeur');
   const k = know('combien de temps les frites au air fryer'); if (!k || !k.lines.join(' ').includes('200 °C')) throw new Error('air fryer');
   if (!know('comment adapter une recette au thermomix')) throw new Error('thermomix');
+});
+t('un appareil se remplace souvent : burger à la poêle, frites au four, Cookeo en cocotte ; sinon « Il faut … ou … »', () => {
+  const burger = cat.list.find(r => r.t === 'Burgers au barbecue'), gasp = cat.list.find(r => r.t === 'Gaspacho au Thermomix'), quiche = cat.list.find(r => r.t === 'Quiche lorraine'), papil = cat.list.find(r => r.t === 'Saumon en papillote, courgettes et citron');
+  const p = equipPlan(burger, { equip: ['plaques'] });
+  eq([p.missing, p.swaps.map(x => x.by.join('+')), p.swaps[0].tip.includes('poêle')], [[], ['plaques'], true]);
+  eq([missingEquip(gasp, { equip: ['plaques'] }), lockText(gasp, { equip: ['plaques'] }), missingEquip(gasp, { equip: ['mixeur'] })], [['thermomix'], 'Il faut un Thermomix ou un mixeur', []]);
+  eq([missingEquip(quiche, { equip: ['plaques', 'air_fryer'] }), missingEquip(papil, { equip: ['air_fryer'] }), lockText(papil, { equip: ['plaques'] })], [['four'], [], 'Il faut un four ou un air fryer']);
+  eq(missingEquip(cat.list.find(r => r.t === 'Gaufres'), { equip: ['plaques', 'four', 'micro-ondes', 'mixeur', 'thermomix', 'cookeo', 'air_fryer', 'barbecue', 'raclette'] }), ['gaufrier']);
+  // les tartes, pizzas et gâteaux restent au four
+  if (cat.list.some(r => r.c === 'Tartes & pizzas' && r.x && r.x.four)) throw new Error('tarte au air fryer');
+});
+t('assistant : cuisines, types de plat, enfants, invités, « sans four », envie de chaud ; nouvelles intentions', () => {
+  const W = q => findWish(q);
+  eq([W('un plat italien').cuisine, W('quelque chose de japonais').cuisine, W('une salade composée').cat, W('un truc pour les enfants').kids, W('on reçoit des amis').party, W('j’ai pas de four').without, W('sans four ni micro-ondes').without, W('envie de chaud').hot, W('salade de chèvre chaud').hot],
+    [{ fam: 'italie' }, { k: ['Japonaise'] }, 'Salades', true, true, ['four'], ['four', 'micro-ondes'], true, undefined]);
+  eq([W('je peux faire la recette sans thermomix').equip, W('une recette au thermomix').equip, W('j’ai la flemme').maxTime], [undefined, 'thermomix', 15]);
+  eq(['j’ai combien de lait', 'planifie ma semaine', 'quel temps il fait demain', 'quelle heure il est', 'je n’ai pas de crème fraîche', 'j’ai pas de four je fais quoi', 'le poulet se garde combien de temps'].map(q => intent(chatNorm(q))),
+    ['stock', 'weekAuto', 'offtopic', 'clock', 'substitute', 'ideas', 'keep'].map((x, i) => i === 5 ? intent(chatNorm('j’ai pas de four je fais quoi')) : x));
+  if (intent(chatNorm('j’ai pas de four je fais quoi')) === 'substitute') throw new Error('four ≠ ingrédient');
+});
+t('savoir : lexique, quand ça rate, faire sans l’appareil, fiche approchante', () => {
+  const K = q => (know(q) || { lines: [''] }).lines.join(' ');
+  for (const [q, w] of [['c est quoi un bain-marie', 'bain-marie'], ['que veut dire déglacer', 'Déglacer'], ['ma sauce est trop liquide', 'maïzena'], ['ma chantilly ne monte pas', 'froide'], ['comment adapter une recette du four au air fryer', '20 °C'],
+    ['sans cookeo comment je fais', 'cocotte'], ['j ai pas de barbecue', 'poêle'], ['raclette sans appareil', 'grill du four'], ['je peux faire des frites au four', '220 °C']]) if (!K(q).includes(w)) throw new Error(q + ' → ' + K(q).slice(0, 60));
+  if (know('une recette au cookeo')) throw new Error('une idée, pas une fiche');
+  const n = knowNear('et la chantilly alors'); if (!n || !n.lines[0].includes('chantilly')) throw new Error('fiche approchante');
 });
 t('recettes grisées faute d’appareil', () => {
   const q = cat.list.find(r => r.t === 'Quiche lorraine');
