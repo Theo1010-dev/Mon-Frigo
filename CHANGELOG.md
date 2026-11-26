@@ -1,5 +1,22 @@
 # Historique des versions de Mon Frigo
 
+## 1.17.0
+- **Micro de l'assistant** :
+  - ta phrase s'écrit pendant que tu parles et part toute seule ; le bouton devient rouge pendant l'écoute, et un 2e appui arrête ;
+  - si la dictée ne marche pas (micro bloqué, rien entendu, pas d'internet, iPhone), l'assistant dit pourquoi et propose le micro du clavier, qui marche partout ;
+  - quand tu as parlé, la réponse est lue à voix haute.
+- **L'assistant suit la conversation** :
+  - « la deuxième », « mets-la demain soir », « il me manque quoi ? », « et pour 6 ? », « c'est cher ? », « c'est long ? » ;
+  - « il me manque quoi pour des crêpes » choisit la recette de base et liste ce qui manque ;
+  - « un menu complet pour ce soir » propose une entrée, un plat et un dessert.
+- **Mode cuisine** :
+  - sous chaque étape, « 🤔 Je ne comprends pas » donne l'étape en petites actions, ce qu'il faut (avec les quantités), les mots de cuisine expliqués et le thermostat ;
+  - « 👀 C'est bon quand ? » dit à quoi ça doit ressembler (oignons translucides, poulet blanc à cœur, couteau qui ressort sec, sauce crémeuse…) ;
+  - un bouton « Je n'en ai pas » sur chaque ingrédient ouvre l'assistant, qui propose un remplaçant adapté à la recette.
+- **« J'ai pas de riz »** : des remplaçants adaptés (semoule, boulgour, quinoa…), en priorité ce que tu as déjà. Pendant une recette, ils sont adaptés à celle-ci : jamais de banane à la place des œufs dans une carbonara. Il propose aussi des idées sans ce produit.
+- L'assistant dit honnêtement qu'il ne peut pas voir les photos (il fonctionne sans internet), et donne à la place les repères de l'étape en cours.
+- Pour « on mange quoi ce soir », il propose de vrais plats plutôt que des entrées.
+
 ## 1.16.0
 - **Un appareil se remplace souvent** : un burger au barbecue se fait aussi à la poêle, des frites au air fryer au four, un plat au Cookeo en cocotte, une recette au Thermomix à la casserole, une raclette sous le grill du four… Ces recettes ne sont plus grisées si un de tes appareils fait l'affaire. La carte l'indique (« à la poêle », « en cocotte »), et la fiche comme le mode cuisine expliquent comment faire (température, temps).
 - Le four peut être remplacé par l'air fryer pour 160 plats qui tiennent dans le panier (pas les tartes, pizzas, gâteaux en moule ni les rôtis).

@@ -14,7 +14,8 @@ with sync_playwright() as p:
     b = p.chromium.launch(channel='chromium')
     ctx = b.new_context(viewport={'width': 360, 'height': 740}, is_mobile=True, has_touch=True, locale='fr-FR', color_scheme=random.choice(['light', 'dark']), accept_downloads=True)
     ctx.grant_permissions(['notifications']); pg = ctx.new_page(); pg.set_default_timeout(1500)
-    pg.on('pageerror', lambda e: issues.append(('JS', str(e)[:200])))
+    last = []
+    pg.on('pageerror', lambda e: issues.append(('JS', str(e)[:200] + '  ← après : ' + ' > '.join(last[-4:]))))
     pg.on('console', lambda m: issues.append(('console', m.text[:200])) if m.type == 'error' else None)
     pg.on('filechooser', lambda fc: None); pg.on('dialog', lambda d: (issues.append(('dialog', d.message[:80])), d.dismiss()))
     pg.goto(URL); pg.wait_for_selector('.sheet.open'); pg.locator('.sheet.open').last.get_by_role('button', name='Commencer').click(); pg.wait_for_timeout(300)
@@ -22,7 +23,6 @@ with sync_playwright() as p:
     for n in ['🥚 Œufs', '🍝 Pâtes', '🥓 Lardons', '🧅 Oignon', '🥒 Courgette', '🥛 Lait', '🧀 Fromage râpé', '🍗 Poulet']: s.get_by_role('button', name=n, exact=True).click()
     s.locator('.sheet-foot .btn').click(); pg.wait_for_timeout(300)
     if th: pg.click('#meBtn'); pg.wait_for_timeout(200); pg.locator('.acc-head', has_text='Apparence').click(); pg.get_by_role('button', name='Ambiance ' + th).click(); pg.wait_for_timeout(300); pg.click('#tabbar [data-tab=home]')
-    last = []
     for i in range(N):
         try:
             if random.random() < .06: pg.keyboard.press('Escape'); pg.wait_for_timeout(120); continue

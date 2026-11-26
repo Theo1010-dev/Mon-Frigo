@@ -15,7 +15,9 @@ export function h(tag, props, ...kids) {
 function add(el, kids) { for (const k of kids.flat(Infinity)) { if (k == null || k === false) continue; el.append(k.nodeType ? k : document.createTextNode(String(k))); } }
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-export const clear = el => { while (el.firstChild) el.firstChild.remove(); return el; };
+// vide un élément. Le champ en cours de saisie est d'abord quitté proprement : son « change » (qui peut redessiner) passe AVANT qu'on retire quoi que ce soit,
+// sinon le navigateur retire deux fois le même nœud (« The node to be removed is no longer a child of this node »)
+export const clear = el => { const a = document.activeElement; if (a && a !== document.body && el.contains(a)) a.blur(); while (el.firstChild) el.firstChild.remove(); return el; };
 export const btn = (label, props = {}, ic) => h('button', { type: 'button', ...props }, ic ? icon(ic, 18) : null, label != null && label !== '' ? h('span', null, label) : null);
 export function haptic(ms = 12) { try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
 

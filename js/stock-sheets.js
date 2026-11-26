@@ -191,7 +191,7 @@ export function openStockItem(id) {
   const get = () => S.data.stock.find(x => x.id === id); if (!get()) return;
   const body = h('div', { class: 'form' }); const today = todayISO();
   const draw = () => {
-    const it = get(); if (!it) { s.close(); return; } clear(body);
+    clear(body); const it = get(); if (!it) { s.close(); return; }
     const st = status(it, today), k = it.ing && kb.get(it.ing);
     s.setTitle && s.setTitle(it.name);
     const exp = h('input', { type: 'date', class: 'input', value: it.expiry || '', 'aria-label': 'Date limite', onchange: e => { A.updateStock(id, { expiry: e.target.value || null }); draw(); } });

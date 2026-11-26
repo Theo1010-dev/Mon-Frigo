@@ -101,6 +101,17 @@ QUESTIONS = [
     ("quel temps il fait demain", ['internet']),
     ("quelle heure il est", ['Il est']),
     ("quelle est la capitale du japon", ['internet']),
+    # nouveautés 1.17 : menu, ce qu'il manque pour un plat, remplacer un ingrédient, étapes, photo
+    ("un menu complet pour ce soir", ['Entrée']),
+    ("il me manque quoi pour des crêpes", ['Pâte à crêpes']),
+    ("est-ce que j'ai tout pour une omelette", ['Omelette']),
+    ("j'ai pas de riz", ['Semoule']),
+    ("je n'ai pas de parmesan", ['Emmental', 'Fromage râpé']),
+    ("je n'ai pas de poivre", ['relever']),
+    ("je comprends pas l'étape 2", ['De quelle recette']),
+    ("je peux t'envoyer une photo de mon plat ?", ['photos']),
+    ("c'est quoi un roux", ['farine']),
+    ("ça veut dire quoi faire suer les oignons", ['sans les colorer']),
     ("cmt faire une vinaigrette", ['vinaigre']),
     ("cb de tps pr cuire des pates", ['min']),
 ]

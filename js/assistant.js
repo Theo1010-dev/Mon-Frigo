@@ -4,11 +4,11 @@ import { h, chip, clear, haptic, openSheet, plate } from './ui.js';
 import { icon } from './icons.js';
 import { S, set, ctx, setPref } from './state.js';
 import * as A from './actions.js';
-import { score, allowed, search, inMoment, seasonal, missingEquip, lockText, cuisineFamily, swapLabel } from './recipes.js';
+import { score, allowed, search, inMoment, seasonal, missingEquip, lockText, cuisineFamily, swapLabel, scaleIngredients } from './recipes.js';
 import { clearFridge, myDishes, slotName, autoPlan } from './plan.js';
 import { expiringSoon, status, statusText, zoneLabel } from './stock.js';
-import { fmtQty, toGrams } from './units.js';
-import { todayISO, addDays, fmtDateLong, norm, plural } from './util.js';
+import { fmtQty, toGrams, canonUnit } from './units.js';
+import { todayISO, addDays, fmtDateLong, norm, plural, money, fmtNum } from './util.js';
 import { nav, resetRUI, RUI } from './nav.js';
 import { learnedSummary, forgetAll, freePattern } from './habits.js';
 import { stats as rpgStats, XP } from './rpg.js';
@@ -21,6 +21,7 @@ import { mascotEl } from './mascot.js';
 import { openGuide } from './guide.js';
 import { openQuickMeal } from './plan-sheets.js';
 import { openRecipe } from './recipe-sheets.js';
+import { explainStep } from './explain.js';
 import { openQuickAdd } from './stock-sheets.js';
 
 const kb = S.kb;
@@ -35,11 +36,14 @@ const closeChat = () => sheet && sheet.close();
 // ---------- briques de réponse ----------
 const P = (...k) => h('p', null, ...k);
 const B = t => h('strong', null, t);
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const list = items => h('ul', { class: 'bot-list' }, items.map(x => h('li', null, ...[].concat(x))));
 const actions = (...bs) => h('div', { class: 'bot-acts' }, bs.filter(Boolean));
 const act = (label, fn, ic, cls = 'chip') => h('button', { type: 'button', class: cls + ' bot-act', onclick: fn }, ic ? icon(ic, 16) : null, label);
-function recCard(r, why) {
-  return h('button', { type: 'button', class: 'bot-rec', onclick: later(() => openRecipe(r.id)) }, plate(r, kb, 'xs'),
+// les recettes dont on parle : la dernière liste montrée (« la deuxième », « mets-la demain soir ») et celle qu'on a choisie
+let FOCUS = { recs: [], id: null };
+function recCard(r, why, pick = false) {
+  return h('button', { type: 'button', class: 'bot-rec', 'data-rid': r.id, 'data-pick': pick ? '1' : null, onclick: () => { FOCUS.id = r.id; later(() => openRecipe(r.id))(); } }, plate(r, kb, 'xs'),
     h('span', { class: 'grow' }, h('span', { class: 'strong block clamp2' }, r.t), h('span', { class: 'muted sm block' }, why)), icon('right', 18));
 }
 // articles : « le poulet », « la crème », « l’huile », « les œufs » ; « du poulet », « de la crème », « des œufs »
@@ -72,6 +76,8 @@ function ideas(text, offset = 0) {
   if (w.cat) L = L.filter(r => r.c === w.cat);
   if (w.kids) L = L.filter(r => (r.g || []).includes('enfants'));
   if (w.hot) L = L.filter(r => (r.e || []).length && !['Salades', 'Desserts'].includes(r.c) && !(r.g || []).includes('froid'));
+  // « on mange quoi ce soir » : un vrai plat, pas une entrée (sauf si on demande une soupe, une salade ou du léger)
+  if (moment === 'plat' && !w.cat && !w.light && !need.length) { const main = L.filter(r => !(r.mt || []).includes('Entrée')); if (main.length >= 4) L = main; }
   if (w.party) L = L.filter(r => (r.g || []).some(g => g === 'fête' || g === 'week-end' || g === 'familial' || g === 'apéritif'));
   if (w.cheap) L = L.filter(r => r.costKnown && r.costPer <= 1.5);
   if (w.light) L = L.filter(r => (r.g || []).some(g => ['léger', 'équilibré', 'salade', 'soupe'].includes(g)) || ['Salades', 'Soupes', 'Poisson'].includes(r.c));
@@ -110,6 +116,8 @@ function byName(q) {
 }
 
 // remplacements de cuisine courants (en plus des familles de la base : fromages, volailles…)
+// remplaçants valables seulement en pâtisserie
+const SWEET_ONLY = new Set(['oeufs']);
 const SWAPS = {
   creme: [['lait-coco', 'yaourt', 'fromage-frais', 'mascarpone', 'lait'], 'Pour une sauce, du lait + 1 cuillère de maïzena épaissit très bien ; en dessert, le mascarpone ou le yaourt grec font l’affaire.'],
   beurre: [['huile-olive'], 'En cuisson salée, l’huile d’olive remplace le beurre. En pâtisserie, compte 80 g d’huile pour 100 g de beurre.'],
@@ -129,6 +137,33 @@ const SWAPS = {
   'tomate-concassee': [['tomate'], 'Des tomates fraîches pelées et coupées, avec 10 min de cuisson en plus.'],
   bouillon: [[], 'Un fond d’eau avec un peu de sauce soja, des herbes et une noix de beurre fait un bouillon express.'],
   mayonnaise: [['yaourt', 'fromage-frais'], 'Un yaourt avec un peu de moutarde fait une sauce plus légère.'],
+  riz: [['semoule', 'boulgour', 'quinoa', 'pates'], 'Semoule, boulgour ou quinoa cuisent plus vite (10 à 15 min). Pour un risotto, il faut un riz rond : sinon, fais plutôt des pâtes crémeuses.'],
+  'riz-risotto': [['riz', 'pates'], 'Un riz long marche, en moins crémeux : ajoute un peu plus de parmesan et de beurre à la fin.'],
+  pates: [['riz', 'gnocchis', 'semoule'], 'Avec une sauce, du riz ou des gnocchis font très bien l’affaire.'],
+  'pomme-de-terre': [['patate-douce'], 'La patate douce cuit un peu plus vite et rend le plat plus sucré.'],
+  oignon: [['oignon-rouge', 'oignon-nouveau', 'poireau'], 'Un blanc de poireau ou une échalote apportent le même goût.'],
+  ail: [[], 'Sans ail, un peu plus d’oignon et une pincée d’herbes de Provence ; ou de l’ail en poudre (une pincée par gousse).'],
+  poulet: [['dinde', 'porc', 'tofu'], 'La dinde se cuit exactement comme le poulet ; le tofu, bien doré, pour une version végé.'],
+  'boeuf-hache': [['porc', 'lentilles'], 'Pour une bolognaise ou un chili végé, des lentilles cuites remplacent très bien la viande hachée.'],
+  lardons: [['jambon', 'chorizo'], 'Des dés de jambon (moins gras), ou du chorizo pour plus de goût.'],
+  emmental: [['fromage-rape', 'parmesan', 'mozzarella', 'cheddar'], null],
+  'fromage-rape': [['emmental', 'parmesan', 'mozzarella', 'cheddar'], null],
+  yaourt: [['fromage-frais', 'creme'], null],
+  'lait-coco': [['creme', 'lait'], 'De la crème allongée d’un peu de lait, avec une pincée de curry ou de noix de coco râpée si tu en as.'],
+  tomate: [['tomate-concassee', 'tomate-cerise'], null],
+  'huile-olive': [['beurre'], 'N’importe quelle huile neutre fait l’affaire pour cuire.'],
+  miel: [['sucre', 'confiture'], null],
+  vinaigre: [['citron'], 'Le jus de citron remplace le vinaigre dans une vinaigrette.'],
+  'herbes-fraiches': [['persil', 'ciboulette', 'coriandre', 'basilic'], 'Une herbe fraîche en remplace souvent une autre ; sinon des herbes séchées (3 fois moins).'],
+  persil: [['ciboulette', 'coriandre', 'basilic'], 'Sinon des herbes séchées : 3 fois moins.'],
+  coriandre: [['persil', 'basilic', 'menthe'], null],
+  basilic: [['persil', 'pesto'], null],
+  champignons: [['courgette', 'aubergine'], null],
+  courgette: [['aubergine', 'poivron'], null],
+  epinards: [['salade', 'chou'], 'Des feuilles de salade fondues à la poêle 1 min dépannent.'],
+  saumon: [['truite', 'cabillaud', 'thon'], null],
+  cabillaud: [['colin', 'merlu', 'poisson-blanc'], null],
+  chocolat: [['cacao', 'pate-tartiner'], '30 g de cacao + 20 g de beurre remplacent environ 50 g de chocolat.'],
 };
 
 // ---------- réponses ----------
@@ -185,9 +220,25 @@ const R = {
   substitute(text) {
     const { found } = findIngs(text, kb); const k = found.length && kb.get(found[0]);
     if (!k) return R.unknown(text);
-    const tip = SWAPS[k.id], ids = [...new Set([...(tip ? tip[0] : []), ...kb.subsOf(k.id)])], subs = ids.map(id => kb.get(id)).filter(Boolean), have = new Set(S.data.stock.map(x => x.ing).concat([...kb.pantry]));
-    if (!subs.length && !tip) return [P(`Je n’ai pas de remplaçant sûr pour ${k.n.toLowerCase()}. Les recettes te le signalent quand un produit de la même famille fait l’affaire.`)];
-    return [P('À la place de ', B(k.n.toLowerCase()), ', tu peux prendre :'), subs.length ? list(subs.map(s => [s.emoji + ' ' + s.n, have.has(s.id) ? h('span', { class: 'tag ok sm-tag' }, 'tu en as') : null])) : null, tip && tip[1] ? P('💡 ', tip[1]) : null].filter(Boolean);
+    const have = new Set(S.data.stock.map(x => x.ing).concat([...kb.pantry])), tip = SWAPS[k.id];
+    // remplaçants choisis à la main d'abord ; de la même famille, seulement ceux que tu as (pas de feta dans une carbonara)
+    const ids = [...new Set(tip ? [...tip[0], ...kb.subsOf(k.id).filter(id => have.has(id))] : kb.subsOf(k.id))].filter(id => id !== k.id).slice(0, 5), subs = ids.map(id => kb.get(id)).filter(Boolean);
+    const de = art(k.id, null, true), le = art(k.id), nmk = k.n.toLowerCase();
+    // la recette en cours (mode cuisine) ou celle dont on parle, si elle contient ce produit
+    const ck = S.data.cook && S.cat.get(S.data.cook.rid), cur = [ck, FOCUS.id && S.cat.get(FOCUS.id)].find(r => r && r.i.some(([id]) => id === k.id));
+    const need = cur && scaleIngredients(cur, (S.data.cook && S.data.cook.serv) || S.data.prefs.people || 2).find(([id]) => id === k.id);
+    subs.sort((a, b) => have.has(b.id) - have.has(a.id));   // ce que tu as déjà d'abord
+    const ideas = act(`Des idées sans ${nmk}`, () => ask(`une idée sans ${nmk}`), 'dice'), toShop = act(`Ajouter ${de} aux courses`, () => { A.addShop({ name: k.n, ing: k.id }); reply([P('C’est sur ta liste de courses 🛒')]); }, 'cart');
+    // une épice ou un condiment : on peut s'en passer
+    if (!subs.length && !tip && ['spice', 'condiment', 'herb'].includes(k.role)) return [P(`Pas de souci : ${le} sert juste à relever le plat. Tu peux faire sans, ou mettre une autre épice ou des herbes que tu as.`)];
+    if (!subs.length && !tip) return [P(`Je n’ai pas de remplaçant sûr pour ${le}${cur ? ` dans ${cur.t.toLowerCase()}` : ''}.`), actions(ideas, toShop)];
+    // dans un plat salé, les remplaçants « pâtisserie » (banane, compote pour les œufs) n'ont pas de sens
+    const sweet = r => r.c === 'Desserts' || (r.mt || []).some(x => x === 'Dessert' || x === 'Goûter' || x === 'Petit-déjeuner');
+    if (cur && SWEET_ONLY.has(k.id) && !sweet(cur)) return [P('Dans ', B(cur.t), `, ${le} ${k.g && k.g.endsWith('p') ? 'sont indispensables' : 'est indispensable'} : il n’y a pas de vrai remplaçant.`), actions(act(`Des idées sans ${nmk}`, () => ask(`une idée sans ${nmk}`), 'dice'), toShop)];
+    const qtyTxt = need ? (canonUnit(need[2]) === 'pièce' ? `${fmtNum(need[1])} ${nmk}` : `${fmtQty(need[1], need[2])} ${/^[aeiouyhéèêœ]/i.test(nmk) ? 'd’' : 'de '}${nmk}`) : '';
+    const head = cur ? P('Pour ', B(cur.t), qtyTxt ? ` (il faut ${qtyTxt})` : '', ', tu peux remplacer ', le, ' par :') : P('À la place ', B(de), ', tu peux prendre :');
+    return [head, subs.length ? list(subs.map(s => [s.emoji + ' ' + s.n, have.has(s.id) ? h('span', { class: 'tag ok sm-tag' }, 'tu en as') : null])) : null, tip && tip[1] ? P('💡 ', tip[1]) : null,
+      actions(cur ? null : ideas, toShop)].filter(Boolean);
   },
   stats() {
     const r = rpgStats(), mo = todayISO().slice(0, 7), waste = S.data.waste.filter(w => w.date.slice(0, 7) === mo).length;
@@ -399,7 +450,130 @@ function vocab() {
   if (!VOCAB) VOCAB = makeVocab([...BRAIN_WORDS, ...KNOW_WORDS, ...[...kb.alias].flatMap(a => String(a[0]).split(/[ '-]/)), ...S.cat.list.flatMap(r => norm(r.t).split(' '))]);
   return VOCAB;
 }
+// « la deuxième », « mets-la demain soir », « il me manque quoi ? », « pour 6 », « c'est cher ? » : la recette dont on vient de parler
+const JOURS_W = new Set(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche', 'demain', 'soir', 'midi', 'aujourd', 'hui', 'matin', 'semaine', 'prochain', 'prochaine']);
+const ORD = [['premiere|premier|1ere|1re|1er|la 1|le 1|numero 1', 0], ['deuxieme|seconde|second|2e|2eme|la 2|le 2|numero 2', 1], ['troisieme|3e|3eme|la 3|le 3|numero 3', 2], ['quatrieme|4e|4eme|la 4|le 4|numero 4', 3], ['cinquieme|5e|5eme|la 5|numero 5', 4], ['sixieme|6e|6eme|la 6|numero 6', 5]];
+// la dernière liste de recettes montrée dans la discussion (pas les cartes « Bon choix »)
+function lastRecs() {
+  for (let i = LOG.length - 1; i >= 0; i--) { const els = LOG[i].querySelectorAll('.bot-rec:not([data-pick])'); if (els.length) return [...new Set([...els].map(e => e.dataset.rid))]; }
+  return [];
+}
+// mots d'une suite de conversation (le reste désigne un autre plat : « il me manque quoi pour des crêpes » n'est pas une suite)
+const FOLLOW_WORDS = new Set('manque manquent faut quoi ingredient ingredients combien temps long longue prend duree cher chere prix coute cout couter budget equilibre equilibree sain saine calorie calories leger legere gras grasse ajoute ajouter rajoute courses liste acheter personne personnes pers gens celle celui cette ceci prends prendre choisis choisir ouvre ouvrir montre montrer mets met mettre planifie prevois programme note garde dedans alors oui vas pour premiere premier deuxieme seconde second troisieme quatrieme cinquieme sixieme derniere dernier numero elle est faire fait recette plat quel quelle ils elles tout bien'.split(' '));
+function followRecipe(q) {
+  const recs = lastRecs(); if (recs.join() !== FOCUS.recs.join()) FOCUS = { recs, id: recs.length === 1 ? recs[0] : FOCUS.id && recs.includes(FOCUS.id) ? FOCUS.id : null };
+  if (!FOCUS.recs.length && !FOCUS.id) return null;
+  const t = flat(q), words = t.trim().split(' ').length;
+  let idx = null; for (const [ws, i] of ORD) if (ws.split('|').some(w => t.includes(' ' + w + ' ') && (w.length > 3 || words <= 4 || / (la|le|numero) /.test(t)))) { idx = i; break; }
+  if (/ (derniere|dernier) /.test(t)) idx = FOCUS.recs.length - 1;
+  const pron = / (celle la|celle ci|cette recette|ce plat|celui la|celui ci|cette idee|ca|elle) /.test(t) || / (mets|met|planifie|prevois|programme|note|garde) (la|le) /.test(t);
+  if (idx != null && idx >= FOCUS.recs.length) return [P(`Il n’y en avait que ${FOCUS.recs.length} 😉`)];
+  // une autre demande qui cite un produit ou une question de cuisine précise (« combien de temps cuire le riz ») : ce n'est pas une suite
+  if (idx == null && (findIngs(q, kb).found.length || (know(q) || {}).score >= 20)) return null;
+  const id = idx != null ? FOCUS.recs[idx] : FOCUS.id || (pron ? FOCUS.recs[0] : null);
+  const r = id && S.cat.get(id); if (!r) return null;
+  if (idx == null && dishWords(q).some(w => w.length >= 4 && !FOLLOW_WORDS.has(w) && !JOURS_W.has(w) && !norm(r.t).includes(w.replace(/s$/, '')))) return null;
+  const serv = S.data.prefs.people || 2, nm = r.t;
+  const pick = () => { FOCUS.id = r.id; };
+  // planifier : « mets-la demain soir », « prévois la 2 samedi »
+  const other = leftover(t.replace(/ (mets|met) la /, ' mets ')).split(' ').filter(w => w.length > 2 && !/^(celle|celui|cette|ceci|recette|plat|premiere|premier|deuxieme|seconde|second|troisieme|quatrieme|derniere|dernier|numero|elle|plutot|aussi)$/.test(norm(w)));
+  if (!other.length && (/ (mets|met|planifie|prevois|programme|note|garde) (la|le|celle|celui|ca) /.test(t) || (/ (mets|met|planifie|prevois|programme) /.test(t) && idx != null))) {
+    const { day, slot } = findWhen(q, todayISO(), A.currentMealSlot()); if (!day) return [P(`Pour quand ? Dis-moi par exemple « mets ${nm.toLowerCase()} demain soir ».`)];
+    pick(); const k = slot || (S.data.plan[day] && S.data.plan[day].lunch ? 'dinner' : 'lunch'), before = JSON.parse(JSON.stringify(S.data.plan)); A.planSet(day, k, r.id, serv); haptic(10);
+    return [P('C’est prévu 📅 ', B(nm), ` pour ${day === todayISO() ? 'aujourd’hui' : fmtDateLong(day).toLowerCase()} ${k === 'lunch' ? 'midi' : 'soir'}.`), actions(act('Annuler', () => { set('plan', before); reply([P('Annulé.')]); }, 'undo'), act('Ajouter ce qui manque aux courses', () => { const n = A.addMissingToShop(score(r, serv, ctx()).cov.missing); reply([P(n ? `${n} produit${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''} aux courses 🛒` : 'Tu as déjà tout 👍')]); }, 'cart'))];
+  }
+  const cov = score(r, serv, ctx()).cov;
+  // ce qui manque, et l'ajouter aux courses
+  if (/ (manque|manquent|il me faut|acheter|courses) /.test(t)) {
+    pick();
+    if (!cov.missing.length) return [P('Pour ', B(nm), ', tu as déjà tout 👍'), actions(act('Voir la recette', later(() => openRecipe(r.id)), 'utensils'))];
+    const add = / (ajoute|ajouter|mets|met|rajoute) /.test(t);
+    if (add) { const n = A.addMissingToShop(cov.missing); return [P(n ? `C’est noté 🛒 ${n} produit${n > 1 ? 's' : ''} pour ${nm.toLowerCase()} sur ta liste.` : 'C’est déjà sur ta liste 👍')]; }
+    return [P('Pour ', B(nm), ', il te manque :'), list(cov.missing.map(x => `${kb.name(x.id, x.id)} (${fmtQty(x.missing.qty, x.missing.unit)})`)), actions(act('Ajouter aux courses', () => { const n = A.addMissingToShop(cov.missing); reply([P(n ? `${n} produit${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''} aux courses 🛒` : 'C’est déjà sur ta liste 👍')]); }, 'cart'))];
+  }
+  // les ingrédients, éventuellement pour N personnes
+  const nb = t.match(/ pour (\d{1,2}|deux|trois|quatre|cinq|six|huit|dix) (personnes?|pers|gens)? ?/); const N = nb ? ({ deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, huit: 8, dix: 10 })[nb[1]] || +nb[1] : null;
+  if (/ (ingredient|ingredients|il faut quoi|faut quoi|qu est ce qu il faut|quoi dedans|y a quoi dedans|liste) /.test(t) || (N && (idx != null || pron || words <= 4))) {
+    pick(); const n = N || serv;
+    return [P(`${nm}, pour ${n} personne${n > 1 ? 's' : ''} :`), list(scaleIngredients(r, n).map(([id, qq, u]) => `${kb.name(id, id)} : ${fmtQty(qq, u)}`)), actions(act('Voir la recette', later(() => openRecipe(r.id)), 'utensils'))];
+  }
+  if (/ (combien de temps|c est long|ca prend|duree|temps) /.test(t) && (idx != null || pron || words <= 5)) { pick(); return [P(B(nm), ` : ${r.m} min en tout${r.d ? `, niveau ${r.d.toLowerCase()}` : ''}.`)]; }
+  if (/ (cher|prix|coute|cout|combien ca|budget) /.test(t) && (idx != null || pron || words <= 5)) { pick(); return [P(B(nm), r.costKnown && r.costPer > 0 ? ` : environ ${money(r.costPer)} par personne.` : ' : je n’ai pas tous les prix pour l’estimer.')]; }
+  if (/ (equilibre|sain|healthy|calorie|calories|leger|legere|gras) /.test(t) && (idx != null || pron || words <= 5)) { pick(); return [P(B(nm), ` : plutôt ${r.bal.label.toLowerCase()} (indice indicatif, pas un avis nutritionnel).`)]; }
+  // « la deuxième », « je prends celle-là », « ouvre la 3 » : on l'ouvre
+  if (idx != null || / (je prends|je choisis|va pour|ouvre|montre|celle la|celle ci|vas y|ok pour) /.test(t)) {
+    if (words > 7 && idx == null) return null;
+    pick();
+    return [P('Bon choix 😋'), h('div', { class: 'bot-recs' }, recCard(r, covWhy(r, score(r, serv, ctx())), true)), actions(act('Voir la recette', later(() => openRecipe(r.id)), 'utensils'), act('La mettre ce soir', () => ask('mets-la ce soir'), 'calendar'), cov.missing.length ? act('Il me manque quoi ?', () => ask('il me manque quoi ?'), 'cart') : null)];
+  }
+  return null;
+}
+// « un menu complet pour ce soir » : une entrée, un plat, un dessert
+function menu(text) {
+  const c = ctx(), p = S.data.prefs, w = findWish(text), serv = p.people || 2;
+  const used = new Set(), ok = (r, m) => allowed(r, p, kb) && inMoment(r, m) && !used.has(r.id) && (m !== 'plat' || !(r.mt || []).includes('Entrée')) && (!w.veg || r.veg) && (!w.maxTime || r.m <= w.maxTime + 15);
+  const best = m => { const x = S.cat.list.filter(r => ok(r, m)).map(r => ({ r, sc: score(r, serv, c) })).sort((a, b) => b.sc.score - a.sc.score)[0]; if (x) used.add(x.r.id); return x; };
+  const parts = [['🥗 Entrée', best('entree')], ['🍲 Plat', best('plat')], ['🍰 Dessert', best('dessert')]].filter(x => x[1]);
+  if (!parts.length) return [P('Je n’ai pas trouvé de menu avec tes réglages.')];
+  return [P(`Voici un menu complet${w.veg ? ' végé' : ''} :`), h('div', { class: 'bot-recs' }, parts.map(([l, x]) => recCard(x.r, `${l} · ${covWhy(x.r, x.sc)}`))), actions(act('Un autre menu', () => { push('me', [P('Un autre menu')]); reply(menuAlt(text)); }, 'dice'))];
+}
+function menuAlt(text) { const c = ctx(), p = S.data.prefs, serv = p.people || 2, w = findWish(text), used = new Set();
+  const any = m => { const L = S.cat.list.filter(r => allowed(r, p, kb) && inMoment(r, m) && !used.has(r.id) && (m !== 'plat' || !(r.mt || []).includes('Entrée')) && (!w.veg || r.veg)).map(r => ({ r, sc: score(r, serv, c) })).sort((a, b) => b.sc.score - a.sc.score).slice(0, 12); const x = L[Math.floor(Math.random() * L.length)]; if (x) used.add(x.r.id); return x; };
+  const parts = [['🥗 Entrée', any('entree')], ['🍲 Plat', any('plat')], ['🍰 Dessert', any('dessert')]].filter(x => x[1]);
+  return [P('Et celui-là ?'), h('div', { class: 'bot-recs' }, parts.map(([l, x]) => recCard(x.r, `${l} · ${covWhy(x.r, x.sc)}`))), actions(act('Encore un autre', () => { push('me', [P('Encore un autre')]); reply(menuAlt(text)); }, 'dice'))]; }
+// la version « de base » d'un plat demandé en deux mots (« des crêpes », « un gâteau au chocolat ») : le titre le plus proche, sans appareil particulier
+const BASIC = new Set(['Pâte à crêpes et crêpes', 'Gâteau au chocolat fondant', 'Pancakes moelleux', 'Gaufres', 'Omelette aux fines herbes', 'Pâtes carbonara', 'Quiche lorraine', 'Mousse au chocolat', 'Hachis parmentier', 'Poulet rôti et pommes de terre au four']);
+const QSTOP = new Set(['au', 'aux', 'a', 'de', 'des', 'du', 'la', 'le', 'les', 'l', 'et', 'en', 'un', 'une']);
+function basicDish(q) {
+  const qn = norm(q), qw = qn.split(' ').filter(w => !QSTOP.has(w));
+  const rank = r => { const tn = norm(r.t), tw = tn.split(/[ -]/).filter(w => w.length > 2 && !QSTOP.has(w)); return (tn.includes(qn) ? 10 : 0) - tw.filter(w => !qw.some(x => w.startsWith(x.replace(/s$/, '')))).length * 2 - (/ au (thermomix|cookeo|air fryer|micro ondes|barbecue|gaufrier)/.test(tn) ? 4 : 0) + (BASIC.has(r.t) ? 6 : 0); };
+  return search(S.cat, q).slice(0, 40).sort((a, b) => rank(b) - rank(a))[0] || null;
+}
+// « il me manque quoi pour des crêpes » : la recette la plus proche, et ce qu'il manque dans ton stock
+function needFor(q) {
+  const m = flat(q).match(/ (?:il me manque quoi|qu est ce qu il me manque|qu est ce qui me manque|il manque quoi|il me faut quoi|qu est ce qu il me faut|j ai tout|est ce que j ai tout) pour (?:faire |cuisiner |preparer )?(?:un |une |des |le |la |les |l |du |de la |d )?(.+?) $/);
+  if (!m) return null;
+  const r = basicDish(m[1]); if (!r) return null;
+  FOCUS.id = r.id; const serv = S.data.prefs.people || 2, cov = score(r, serv, ctx()).cov;
+  if (!cov.missing.length) return [P('Pour ', B(r.t), ', tu as tout ce qu’il faut 👍'), h('div', { class: 'bot-recs' }, recCard(r, covWhy(r, score(r, serv, ctx())), true))];
+  return [P('Pour ', B(r.t), ` (${serv} pers.), il te manque :`), list(cov.missing.map(x => `${kb.name(x.id, x.id)} (${fmtQty(x.missing.qty, x.missing.unit)})`)), h('div', { class: 'bot-recs' }, recCard(r, covWhy(r, score(r, serv, ctx())), true)),
+    actions(act('Ajouter aux courses', () => { const n = A.addMissingToShop(cov.missing); reply([P(n ? `${n} produit${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''} aux courses 🛒` : 'C’est déjà sur ta liste 👍')]); }, 'cart'))];
+}
+// une étape qu'on ne comprend pas, « c'est bon quand ? », une photo : la recette en cours de cuisson (ou celle dont on parle)
+function stepTalk(q) {
+  const t = flat(q), ck = S.data.cook && S.cat.get(S.data.cook.rid) ? S.data.cook : null;
+  const photo = / (photo|photos|image|camera|appareil photo|prendre en photo|tu vois|regarde mon|regarder mon|voir mon plat) /.test(t);
+  const explain = / (comprends pas|comprend pas|comprenais pas|pige pas|capte pas|pas compris|pas clair|explique|expliquer|explication|plus simple|plus simplement|je suis perdu|suis perdue|ca veut dire quoi|je fais comment|comment je fais|c est quoi cette etape) /.test(t);
+  const cues = / (c est bon quand|comment je sais|comment savoir|je sais quand|c est cuit|est ce que c est cuit|c est pret|est ce que c est pret|est ce que c est bon|c est normal|ca doit ressembler|a quoi ca ressemble|quelle couleur|quelle texture) /.test(t);
+  if (!photo && !explain && !cues) return null;
+  const r = ck ? S.cat.get(ck.rid) : FOCUS.id ? S.cat.get(FOCUS.id) : null, serv = ck ? ck.serv : S.data.prefs.people || 2;
+  const m = t.match(/ etape (?:numero |n )?(\d{1,2}) /) || t.match(/ (\d{1,2})(?:ere|re|er|eme|e) etape /) || t.match(/ (premiere|deuxieme|troisieme|quatrieme|cinquieme|sixieme|derniere) etape /);
+  let idx = ck ? ck.step : null;
+  if (m) { const n = /^\d+$/.test(m[1]) ? +m[1] - 1 : m[1] === 'derniere' ? (r ? r.p.length - 1 : 0) : ['premiere', 'deuxieme', 'troisieme', 'quatrieme', 'cinquieme', 'sixieme'].indexOf(m[1]); if (n >= 0) idx = n; }
+  if (photo) {
+    const head = P('Je ne peux pas voir les photos : je fonctionne sans internet, directement sur ton téléphone 📵 Mais je peux te dire à quoi ça doit ressembler.');
+    if (!r || idx == null) return [head, P('Lance le mode « Cuisiner » d’une recette : à chaque étape, touche « 👀 C’est bon quand ? » pour voir les repères (couleur, texture, cuisson).')];
+    const ex = explainStep(r, Math.min(idx, r.p.length - 1), serv, kb);
+    return [head, P(B(`Étape ${ex.n} de ${r.t}`), ' :'), ...(ex.cues.length ? ex.cues.map(x => P(...rich(x))) : [P('Pour cette étape, fie-toi au temps indiqué et goûte : sel, cuisson, texture.')])];
+  }
+  if (!r) return explain && / etape /.test(t) ? [P('De quelle recette ? Ouvre-la et lance « Cuisiner » : je saurai où tu en es. Tu peux aussi toucher « 🤔 Je ne comprends pas » sous chaque étape.')] : null;
+  if (idx == null) { if (!m && !/ etape /.test(t)) return null; idx = 0; }
+  if (idx >= r.p.length) return [P(`${r.t} n’a que ${r.p.length} étapes.`)];
+  const ex = explainStep(r, idx, serv, kb);
+  if (cues && !explain) return [P(B(`Étape ${ex.n} de ${r.t}`), ' : c’est bon quand…'), ...(ex.cues.length ? ex.cues.map(x => P(...rich(x))) : [P('Pas de repère particulier ici : suis le temps indiqué et goûte avant de passer à la suite.')])];
+  const out = [P(B(`Étape ${ex.n} sur ${ex.total}`), ` de ${r.t}, en plus simple :`)];
+  out.push(ex.parts.length > 1 ? h('ol', { class: 'bot-list' }, ex.parts.map(x => h('li', null, x))) : P(ex.text));
+  if (ex.ings.length) out.push(P(B('Il te faut : '), ex.ings.map(([n, qq], i) => `${i ? n.toLowerCase() : n} ${qq}`).join(', '), '.'));
+  for (const d of ex.terms) out.push(P(...rich(d)));
+  for (const x of ex.temps) out.push(P('🌡️ ', x));
+  if (ex.cues.length) out.push(P('👀 ', ...rich(ex.cues[0])));
+  return out;
+}
 function answer(q) {
+  const st = stepTalk(q); if (st) { CTX.last = 'recipe'; return st; }
+  const nf = needFor(q); if (nf) { CTX.last = 'recipe'; return nf; }
+  const fr = followRecipe(q); if (fr) { CTX.last = 'recipe'; return fr; }
+  if (/ (menu complet|repas complet|un menu|entree plat dessert|entree plat et dessert|menu pour|menu du) /.test(flat(q)) && !/ (menu de la semaine|menus de la semaine) /.test(flat(q))) return menu(q);
   const k = intent(q), fu = isFollowUp(q), kn = know(q), t = flat(q);
   if (CTX.kind === 'ideas' && fu === 'more' && (k === 'ideas' || k === 'unknown') && !kn) return ideas(CTX.text, CTX.offset + 4);
   if (CTX.kind === 'ideas' && fu === 'refine' && (k === 'ideas' || k === 'unknown') && !(kn && kn.score >= 20)) {
@@ -456,36 +630,66 @@ function bubble(who, kids) {
 }
 function push(who, kids) { const m = bubble(who, kids); LOG.push(m); if (LOG.length > 40) LOG.shift(); if (feed) { feed.append(m); requestAnimationFrame(() => m.scrollIntoView({ block: 'end', behavior: 'smooth' })); } }
 function reply(kids) { push('bot', kids); }
-function ask(text) {
+function ask(text, { voice = false } = {}) {
   const q = String(text || '').trim(); if (!q) return;
   push('me', [P(q)]);
   // abréviations et fautes de frappe corrigées, puis une réponse par demande (« ajoute du lait et mets des pâtes demain »)
   let outs;
   try { outs = splitRequests(fixTypos(chatNorm(q), vocab())).map(answer); } catch (e) { console.error(e); outs = [[P('Oups, je me suis emmêlé les pinceaux. Reformule ta question ?')]]; }
   const typing = bubble('bot', [h('span', { class: 'typing' }, h('i'), h('i'), h('i'))]); if (feed) { feed.append(typing); typing.scrollIntoView({ block: 'end' }); }
-  setTimeout(() => { typing.remove(); outs.forEach(reply); }, 280);
+  setTimeout(() => { typing.remove(); outs.forEach(reply); if (voice) speak(outs); }, 280);
 }
+// question posée à la voix : la réponse est lue (première phrase, voix française du téléphone, sans internet)
+function speak(outs) {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    const first = outs.flat().find(n => n && n.tagName === 'P'); if (!first) return;
+    let txt = first.textContent.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu, '').replace(/\s+/g, ' ').trim(); if (!txt) return;
+    const list = outs.flat().find(n => n && n.classList && n.classList.contains('bot-recs'));
+    if (list) txt += ' ' + [...list.querySelectorAll('.strong')].slice(0, 3).map(x => x.textContent).join(', ') + '.';
+    speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt.slice(0, 260)); u.lang = 'fr-FR'; u.rate = 1.05;
+    const v = speechSynthesis.getVoices().find(x => /^fr/i.test(x.lang)); if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch {}
+}
+// les autres écrans peuvent ouvrir l'assistant avec une question (mode cuisine : « je n'ai pas de riz »)
+nav.ask = q => openAssistant(q);
 export function openAssistant(question) {
   feed = h('div', { class: 'chat', role: 'log', 'aria-live': 'polite' });
   if (!LOG.length) LOG.push(bubble('bot', R.hello()));
   feed.append(...LOG);
   const inp = h('input', { class: 'input', type: 'text', enterkeyhint: 'send', autocomplete: 'off', maxlength: '200', placeholder: 'Pose ta question…', 'aria-label': 'Ta question' });
   const send = () => { const v = inp.value; inp.value = ''; ask(v); };
-  // dictée vocale (Chrome sur Android, demande internet) : on parle, la question s'écrit et part toute seule
+  // dictée vocale : on parle, la question s'écrit pendant qu'on parle et part toute seule.
+  // Si la dictée de l'app n'est pas possible (micro refusé, iPhone en mode appli, pas d'internet…), on le dit et on propose le micro du clavier, qui marche partout.
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let mic = null;
-  if (SR) mic = h('button', { type: 'button', class: 'btn soft chat-mic', 'aria-label': 'Parler', onclick: () => {
-    if (!navigator.onLine) { reply([P('La dictée vocale a besoin d’internet. Tu peux écrire ta question.')]); return; }
-    try { const rec = new SR(); rec.lang = 'fr-FR'; rec.interimResults = false; rec.maxAlternatives = 1; mic.classList.add('on');
-      rec.onresult = e => { const t = e.results[0][0].transcript; inp.value = ''; ask(t); };
-      rec.onerror = () => { mic.classList.remove('on'); }; rec.onend = () => mic.classList.remove('on'); rec.start(); haptic(8);
-    } catch { mic.classList.remove('on'); }
+  const kbWhere = IOS ? ' (en bas du clavier, à côté de la barre d’espace)' : ' (en haut du clavier, ou à côté de la barre d’espace)';
+  const keyboardMic = why => { inp.focus(); reply([why ? P(why) : null, P(why ? 'Sinon, touche le ' : 'Pour parler, touche le ', B('micro de ton clavier'), kbWhere, ' et parle : ta question s’écrit toute seule. Ça marche sur tous les téléphones.')]); };
+  const MIC_ERR = {
+    'not-allowed': IOS ? 'Sur iPhone, la dictée intégrée à l’appli n’est pas toujours permise.' : 'Le micro est bloqué pour Mon Frigo. Pour l’autoriser : dans Chrome, ⋮ → Paramètres → Paramètres des sites → Micro, puis autorise theo1010-dev.github.io.',
+    'no-speech': 'Je n’ai rien entendu 🤔 Touche le micro, attends qu’il devienne rouge, puis parle.', network: 'La dictée intégrée a besoin d’internet.', 'audio-capture': 'Je ne trouve pas de micro sur ce téléphone.',
+    other: 'La dictée intégrée n’a pas marché.' };
+  MIC_ERR['service-not-allowed'] = MIC_ERR['not-allowed'];
+  let rec = null;
+  const mic = h('button', { type: 'button', class: 'btn soft chat-mic', 'aria-label': 'Parler', onclick: () => {
+    if (rec) { try { rec.stop(); } catch {} return; }   // deuxième appui : on arrête d'écouter
+    if (!SR) { keyboardMic(); return; }
+    if (!navigator.onLine) { keyboardMic(MIC_ERR.network); return; }
+    const ph = inp.placeholder; let heard = '', err = null;
+    const done = () => { mic.classList.remove('on'); mic.setAttribute('aria-label', 'Parler'); inp.placeholder = ph; rec = null; };
+    try {
+      rec = new SR(); rec.lang = 'fr-FR'; rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = false;
+      rec.onresult = e => { heard = [...e.results].map(x => x[0].transcript).join(''); inp.value = heard; };
+      rec.onerror = e => { err = e.error || 'other'; };
+      rec.onend = () => { done(); const q = heard.trim(); if (q) { inp.value = ''; ask(q, { voice: true }); } else if (err && err !== 'aborted') keyboardMic(MIC_ERR[err] || MIC_ERR.other); };
+      rec.start(); mic.classList.add('on'); mic.setAttribute('aria-label', 'Arrêter l’écoute'); inp.value = ''; inp.placeholder = 'Je t’écoute…'; haptic(8);
+    } catch { done(); keyboardMic(MIC_ERR.other); }
   } }, icon('mic', 22));
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); send(); } });
   sheet = openSheet({ title: `${BOT}, ton assistant`, size: 'tall', content: h('div', { class: 'chat-wrap' }, h('p', { class: 'chat-note' }, icon('info', 14), 'Tout reste sur ton téléphone.'), feed),
     footer: h('div', { class: 'chat-bar' }, mic, inp, h('button', { type: 'button', class: 'btn primary chat-send', 'aria-label': 'Envoyer', onclick: send }, icon('right', 22))),
-    headerRight: LOG.length > 1 ? h('button', { type: 'button', class: 'btn link sm', onclick: () => { LOG.length = 0; CTX = { kind: null, text: '', offset: 0, last: null }; LOG.push(bubble('bot', R.hello())); clear(feed); feed.append(...LOG); } }, 'Effacer') : null,
-    onClose: () => { feed = null; sheet = null; } });
+    headerRight: LOG.length > 1 ? h('button', { type: 'button', class: 'btn link sm', onclick: () => { LOG.length = 0; CTX = { kind: null, text: '', offset: 0, last: null }; FOCUS = { recs: [], id: null }; LOG.push(bubble('bot', R.hello())); clear(feed); feed.append(...LOG); } }, 'Effacer') : null,
+    onClose: () => { if (rec) { try { rec.abort(); } catch {} } try { speechSynthesis.cancel(); } catch {} feed = null; sheet = null; } });
   setTimeout(() => { const last = feed && feed.lastChild; if (last) last.scrollIntoView({ block: 'end' }); }, 60);
   if (question) setTimeout(() => ask(question), 200);
 }

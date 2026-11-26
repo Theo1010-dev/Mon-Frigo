@@ -309,6 +309,9 @@ button.item:active, .mini-slot:active, .rec:active, .slot:active, .qp-row:active
 .cook-step { display: flex; flex-direction: column; gap: 16px; min-height: 36vh; }
 .step-num { font-weight: 650; color: var(--ink-2); }
 .step-text { font-family: var(--display); font-size: 25px; line-height: 1.35; font-weight: 520; letter-spacing: -.01em; }
+/* aide de l'étape : un simple trait sur le côté, pas d'encadré */
+.step-asks { margin-top: -4px; } .step-help { display: grid; gap: 8px; padding: 2px 0 2px 14px; border-left: 3px solid var(--accent-tint); font-size: 16px; line-height: 1.45; color: var(--ink); } .step-help p, .step-help ol, .step-help ul { margin: 0; } .step-help ol, .step-help ul { padding-left: 20px; display: grid; gap: 4px; } .step-help .sh-t { font-weight: 650; color: var(--ink-2); font-size: 14.5px; } .step-help .sh-ask { justify-self: start; text-align: left; font-size: 14px; }
+.ing .ing-swap { width: 34px; height: 34px; min-width: 34px; color: var(--ink-3); }
 .timers { display: flex; flex-direction: column; gap: 8px; }
 .timer-pill { display: flex; align-items: center; gap: 12px; background: var(--sunk); border-radius: 18px; padding: 10px 8px 10px 16px; }
 .timer-pill .strong { font-family: var(--display); font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 72px; }

@@ -9,6 +9,7 @@ import { intent, findIngs, findWhen, leftover, shopItems, findWish, isFollowUp, 
 import { know, knowNear, convert as kconvert, KNOW_WORDS } from '../js/know.js';
 import { missingEquip, EQUIP, equipPlan, lockText } from '../js/recipes.js';
 import { guessType, TYPES } from '../js/types.js';
+import { explainStep, doneCues, simpleParts, stepTerms, stepTemps, stepIngredients } from '../js/explain.js';
 
 const kb = new KB(JSON.parse(fs.readFileSync('data/ingredients.json', 'utf8')));
 const cat = new Catalogue(JSON.parse(fs.readFileSync('data/recipes.json', 'utf8')), kb);
@@ -265,6 +266,21 @@ t('savoir : lexique, quand ça rate, faire sans l’appareil, fiche approchante'
     ['sans cookeo comment je fais', 'cocotte'], ['j ai pas de barbecue', 'poêle'], ['raclette sans appareil', 'grill du four'], ['je peux faire des frites au four', '220 °C']]) if (!K(q).includes(w)) throw new Error(q + ' → ' + K(q).slice(0, 60));
   if (know('une recette au cookeo')) throw new Error('une idée, pas une fiche');
   const n = knowNear('et la chantilly alors'); if (!n || !n.lines[0].includes('chantilly')) throw new Error('fiche approchante');
+});
+t('étapes : en plus simple, repères « c’est bon quand », mots expliqués, thermostat, quantités de l’étape', () => {
+  eq(simpleParts('Faire revenir l’oignon 3 min, puis ajouter les tomates. Saler.'), ['Faire revenir l’oignon 3 min.', 'Ajouter les tomates.', 'Saler.']);
+  const C = t => doneCues(t).join(' ');
+  if (!C('Faire revenir l’oignon émincé 3 min').includes('translucides')) throw new Error('oignon');
+  if (!C('Cuire les brocolis 3 min : ils doivent rester croquants').includes('croquants') || C('Cuire les brocolis 3 min : ils doivent rester croquants').includes('sans résistance')) throw new Error('croquant');
+  if (C('Chauffer la crème sans la faire bouillir').includes('grosses bulles')) throw new Error('sans bouillir');
+  if (!C('Faire cuire le bœuf haché 6 min').includes('plus rose') || C('Faire cuire le bœuf haché 6 min').includes('saignant')) throw new Error('haché');
+  if (C('Étaler la pâte et la napper de tomate')) throw new Error('napper ≠ nappe la cuillère');
+  if (!C('Ajouter le mélange œufs-parmesan hors du feu pour une sauce crémeuse').includes('crémeuse')) throw new Error('carbonara');
+  eq([stepTemps('Préchauffer le four à 180 °C.'), stepTerms('Déglacer au vin blanc').length, stepTerms('Griller sur les braises').length], [['180 °C = thermostat 6'], 1, 0]);
+  const carbo = cat.list.find(r => r.t === 'Pâtes carbonara'), crb = cat.list.find(r => r.t === 'Crème brûlée');
+  eq(stepIngredients(carbo, carbo.p[1], 2, kb).map(x => x[0]), ['Lardons']);
+  if (stepIngredients(crb, crb.p[1], 4, kb).some(x => x[0] === 'Vanille')) throw new Error('« sucre vanillé » n’est pas du sucre');
+  const ex = explainStep(carbo, 3, 2, kb); eq([ex.n, ex.total, ex.parts.length >= 2, ex.cues.length >= 1], [4, 4, true, true]);
 });
 t('recettes grisées faute d’appareil', () => {
   const q = cat.list.find(r => r.t === 'Quiche lorraine');

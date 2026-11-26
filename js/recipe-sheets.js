@@ -8,12 +8,26 @@ import { withArticle, addEquip } from './equipment.js';
 import { fmtQty, UNITS_UI, canonUnit } from './units.js';
 import { todayISO, addDays, dayName, fmtDateShort, money, uid } from './util.js';
 import { SLOTS } from './plan.js';
-import { num, RUI, resetRUI } from './nav.js';
+import { num, RUI, resetRUI, nav } from './nav.js';
 import { tx, celebrate } from './theme.js';
+import { explainStep } from './explain.js';
 // appareils de la recette, dans l'ordre de « Mon équipement » : « Four, plaques », « Cookeo », « Sans cuisson »
 const appliances = r => { const l = EQUIP.filter(([k]) => (r.e || []).includes(k)).map(([k]) => equipName(k)); return l.length ? l.map((x, i) => i ? x.toLowerCase().replace('cookeo', 'Cookeo').replace('thermomix', 'Thermomix') : x).join(', ') : 'Sans cuisson'; };
 
 const kb = S.kb;
+// « **gras** » → texte en gras
+const rich = t => String(t).split(/\*\*/).map((x, i) => i % 2 ? h('strong', null, x) : x);
+// l'étape expliquée : petites actions, ce qu'il faut pour cette étape, les mots de cuisine, le thermostat
+function stepHelp(ex) {
+  const out = [];
+  if (ex.parts.length > 1) out.push(h('p', { class: 'sh-t' }, 'En plus simple :'), h('ol', null, ex.parts.map(p => h('li', null, p))));
+  if (ex.ings.length) out.push(h('p', { class: 'sh-t' }, 'Ce qu’il te faut pour cette étape :'), h('ul', null, ex.ings.map(([n, q]) => h('li', null, `${n} : ${q}`))));
+  for (const d of ex.terms) out.push(h('p', null, ...rich(d)));
+  for (const t of ex.temps) out.push(h('p', null, '🌡️ ', t));
+  if (!out.length) out.push(h('p', null, 'Cette étape se fait en un seul geste : lis-la jusqu’au bout, prépare ce qu’il faut à côté, et prends ton temps. Tu peux lancer un minuteur juste en dessous.'));
+  out.push(h('button', { type: 'button', class: 'linkish sh-ask', onclick: () => nav.ask() }, 'Toujours pas clair ? Demande à l’assistant, il sait où tu en es.'));
+  return out;
+}
 // en mode cuisine, le conseil de remplacement s'affiche à l'étape qui utilise l'appareil
 const STEP_KEY = { four: /four|°C/i, air_fryer: /air fryer|panier/i, cookeo: /dorer|pression|cookeo|cuve/i, thermomix: /vitesse|\bbol\b|thermomix/i, 'micro-ondes': /micro-ondes/i, mixeur: /mix/i, barbecue: /braises|barbecue|grille|plancha|grill/i, raclette: /raclette|poêlon/i };
 
@@ -104,6 +118,12 @@ export function openCook(rid, serv, { resume } = {}) {
     stepBox.append(h('div', { class: 'step-num' }, `Étape ${c.step + 1} sur ${total}`), h('p', { class: 'step-text' }, txt));
     for (const x of swaps) if (x.tip && STEP_KEY[x.k] && STEP_KEY[x.k].test(txt)) stepBox.append(h('p', { class: 'swap-note' }, icon('swap', 16), h('span', null, x.tip)));
     const det = detectTimers(txt); if (det.length) stepBox.append(h('div', { class: 'chips wrap' }, det.map(d => btn(`Minuteur ${d.label}`, { class: 'chip timer', onclick: () => addTimer(d.sec, d.label) }, 'timer'))));
+    // « Je ne comprends pas » et « C'est bon quand ? » : l'étape en plus simple, et à quoi ça ressemble quand c'est bon
+    const ex = explainStep(r, c.step, serv, kb), help = h('div', { class: 'step-help', hidden: '' }), cuesBox = h('div', { class: 'step-help', hidden: '' });
+    const toggle = (box, other, chipEl) => { box.hidden = !box.hidden; other.hidden = true; for (const b of stepBox.querySelectorAll('.step-asks .chip')) b.classList.toggle('on', b === chipEl && !box.hidden); haptic(5); if (!box.hidden) requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); };
+    help.append(...stepHelp(ex)); cuesBox.append(...ex.cues.map(x => h('p', null, ...rich(x))));
+    const askHelp = chip('🤔 Je ne comprends pas', false, e => toggle(help, cuesBox, e.currentTarget)), askCues = ex.cues.length ? chip('👀 C’est bon quand ?', false, e => toggle(cuesBox, help, e.currentTarget)) : null;
+    stepBox.append(h('div', { class: 'chips wrap step-asks' }, askHelp, askCues), help, cuesBox);
     prevBtn.disabled = c.step === 0; clear(nextBtn); nextBtn.append(c.step === total - 1 ? 'Terminer 🎉' : 'Étape suivante');
   }
   function drawTimers() {
@@ -115,7 +135,9 @@ export function openCook(rid, serv, { resume } = {}) {
   prevBtn.addEventListener('click', () => { if (c.step > 0) { c.step--; save(); drawStep(); } });
   nextBtn.addEventListener('click', () => { if (c.step < r.p.length - 1) { c.step++; save(); drawStep(); haptic(8); } else { s.close(); setTimeout(() => openFinishCook(rid, serv), 260); } });
   const ingBtn = btn('Voir les ingrédients', { class: 'btn tonal', onclick: () => { ingPanel.hidden = !ingPanel.hidden; ingBtn.querySelector('span:last-child').textContent = ingPanel.hidden ? 'Voir les ingrédients' : 'Masquer les ingrédients'; } }, 'utensils');
-  ingPanel.append(h('ul', { class: 'ings' }, scaleIngredients(r, serv).map(([id, q, u]) => h('li', { class: 'ing' }, h('span', { class: 'e' }, kb.get(id) ? kb.get(id).emoji : '•'), h('span', { class: 'grow strong' }, ingName(id)), h('span', { class: 'qty' }, fmtQty(q, u))))));
+  // un ingrédient qui manque en pleine recette : l'assistant propose de quoi le remplacer
+  ingPanel.append(h('ul', { class: 'ings' }, scaleIngredients(r, serv).map(([id, q, u]) => h('li', { class: 'ing' }, h('span', { class: 'e' }, kb.get(id) ? kb.get(id).emoji : '•'), h('span', { class: 'grow strong' }, ingName(id)), h('span', { class: 'qty' }, fmtQty(q, u)),
+    kb.isPantry(id) ? null : h('button', { type: 'button', class: 'icon-btn sm ing-swap', 'aria-label': `Je n’ai pas de ${ingName(id).toLowerCase()}`, title: 'Je n’en ai pas', onclick: () => nav.ask(`je n'ai pas de ${ingName(id).toLowerCase()}`) }, icon('swap', 17))))));
   const stop = async () => { if (await confirmSheet({ title: 'Arrêter la cuisson ?', text: 'Rien ne sera retiré de ton stock et la recette ne sera pas comptée comme cuisinée.', ok: 'Arrêter' })) { set('cook', null); s.close(); toast('Cuisson arrêtée'); } };
   const s = openSheet({ title: r.t, size: 'full', headerRight: h('button', { type: 'button', class: 'btn link', onclick: () => stop() }, 'Arrêter'), onClose: () => { clearInterval(iv); document.removeEventListener('visibilitychange', vis); try { wake && wake.release(); } catch {} wake = null; },
     content: h('div', { class: 'cook' }, prog, stepBox, timersBox, ingBtn, ingPanel),

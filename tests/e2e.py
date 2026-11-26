@@ -723,6 +723,42 @@ with sync_playwright() as p:
         pg.locator('.chips .chip.on', has_text='Barbecue').click(); pg.wait_for_timeout(300)
         close_sheets()
 
+    @step('Assistant : micro (dictée simulée, erreurs), suite de conversation, menu, mode cuisine expliqué, ingrédient remplacé')
+    def _():
+        FAKE = """(mode) => { window.__spoken = []; try { window.speechSynthesis.speak = u => window.__spoken.push(u.text); } catch (e) {}
+          window.SpeechRecognition = class { start() { setTimeout(() => { if (mode === 'ok') { this.onresult && this.onresult({ results: [[{ transcript: 'on mange quoi ce soir' }]] }); this.onend && this.onend(); }
+            else { this.onerror && this.onerror({ error: mode }); this.onend && this.onend(); } }, 120); } stop() { this.onend && this.onend(); } abort() {} }; }"""
+        close_sheets(); tab('home'); pg.evaluate(FAKE, 'ok')
+        pg.get_by_role('button', name='Demander à mon assistant').click(); pg.wait_for_timeout(500)
+        sheet().get_by_role('button', name='Parler').click(); pg.wait_for_timeout(900)
+        assert sheet().locator('.msg.me', has_text='on mange quoi ce soir').count() >= 1 and sheet().locator('.msg.bot').last.locator('.bot-rec').count() >= 2, 'dictée'
+        assert len(pg.evaluate('window.__spoken')) == 1, 'réponse lue à voix haute'
+        def say(q):
+            n0 = sheet().locator('.msg.bot').count(); sheet().locator('.chat-bar input').fill(q); sheet().locator('.chat-bar input').press('Enter'); pg.wait_for_timeout(600)
+            return ' '.join(m.inner_text() for m in sheet().locator('.msg.bot').all()[n0:])
+        second = sheet().locator('.msg.bot').last.locator('.bot-rec').nth(1).get_attribute('data-rid')
+        assert 'Bon choix' in say('la deuxième'), 'choisir'
+        say('mets-la demain soir'); tom = pg.evaluate("(() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })()")
+        assert (D()['plan'].get(tom) or {}).get('dinner', {}).get('rid') == second, ('mets-la', D()['plan'].get(tom))
+        t = say('il me manque quoi ?'); assert 'il te manque' in t or 'tu as déjà tout' in t, t
+        assert 'Entrée' in say('un menu complet pour ce soir') and 'Dessert' in sheet().locator('.msg.bot').last.inner_text(), 'menu'
+        assert 'Il n’y en avait que' in say('la cinquième'), 'hors liste'
+        pg.evaluate(FAKE, 'not-allowed'); close_sheets(); pg.get_by_role('button', name='Demander à mon assistant').click(); pg.wait_for_timeout(500)
+        sheet().get_by_role('button', name='Parler').click(); pg.wait_for_timeout(700); assert 'micro de ton clavier' in sheet().locator('.msg.bot').last.inner_text(), 'micro bloqué'
+        close_sheets(); tab('recipes'); pg.locator('.view input').first.fill('carbonara'); pg.wait_for_timeout(600)
+        pg.locator('.rec', has_text='Pâtes carbonara').first.click(); pg.wait_for_timeout(600); sheet().get_by_role('button', name='Cuisiner').click(); pg.wait_for_timeout(600)
+        sheet().get_by_role('button', name='🤔 Je ne comprends pas').click(); pg.wait_for_timeout(300)
+        assert 'En plus simple' in sheet().locator('.step-help').first.inner_text(), 'étape expliquée'
+        sheet().get_by_role('button', name='👀 C’est bon quand ?').click(); pg.wait_for_timeout(300)
+        assert 'grosses bulles' in sheet().locator('.step-help').nth(1).inner_text() and sheet().locator('.step-help').first.is_hidden(), 'repères'
+        sheet().get_by_role('button', name='Voir les ingrédients').click(); pg.wait_for_timeout(300)
+        sheet().get_by_role('button', name='Je n’ai pas de parmesan').click(); pg.wait_for_timeout(1200)
+        assert 'remplacer le parmesan' in sheet().locator('.msg.bot').last.inner_text(), 'remplacer dans la recette'
+        t = say('je comprends pas cette étape'); assert 'Étape 1 sur 4' in t, t
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(400)
+        sheet().get_by_role('button', name='Arrêter', exact=True).click(); pg.wait_for_timeout(300); sheet().get_by_role('button', name='Arrêter', exact=True).click(); pg.wait_for_timeout(600)
+        pg.locator('.view input').first.fill(''); pg.wait_for_timeout(300); close_sheets()
+
     @step('Navigation : défilement mémorisé par onglet, onglet actif = retour en haut ; fiche recette sans encadré')
     def _():
         tab('recipes'); pg.fill('input[aria-label="Rechercher une recette"]', ''); pg.wait_for_timeout(300); pg.evaluate('scrollTo(0, 1500)'); pg.wait_for_timeout(200); y = pg.evaluate('scrollY')
